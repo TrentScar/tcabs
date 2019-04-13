@@ -1,0 +1,115 @@
+#SET SQL_SAFE_UPDATES = 0;
+DROP DATABASE tcabs;
+CREATE DATABASE tcabs;
+
+use tcabs;
+#DROP TABLE users;
+CREATE TABLE tcabsusers (
+UID			INT		Not Null,
+Fname			Varchar(255)	NOT NULL,
+Lname			Varchar(255)	NOT NULL,
+Gender		Varchar(10),
+Work_Email		Varchar(255) not Null,
+Personal_Email	Varchar(255),
+Phone			INT,
+Start_Date		DATE,
+End_Date		DATE,
+Password		Varchar(10),
+PRIMARY KEY (UID)
+);
+#DROP TABLE userserrors;
+CREATE TABLE tcabsuserserrors (
+UID			INT		Not Null,
+Fname			Varchar(255)	NOT NULL,
+Lname			Varchar(255)	NOT NULL,
+Gender		Varchar(10),
+Work_Email		Varchar(255) not Null,
+Personal_Email	Varchar(255),
+Phone			INT,
+Start_Date		DATE,
+End_Date		DATE,
+Password		Varchar(10),
+PRIMARY KEY (UID)
+);
+
+#test insert data
+insert into tcabsusers(UID,Fname, Lname, Gender, Work_Email, Personal_Email, Phone, Start_Date, Password)
+values (123456789,'trent', 'scarton', 'male', '102114408@student.swin.edu.au', 'Trentscarton@hotmail.com', 041400785, '2019-4-07', 'mysql');
+
+insert into tcabsusers(UID,Fname, Lname, Gender, Work_Email, Personal_Email, Phone, Start_Date, Password)
+values (1234567,'trent', 'scarton', 'male', '102114408@student.swin.edu.au', 'Trentscarton@hotmail.com', 041400785, '2019-4-07', 'mysql');
+
+insert into tcabsusers(UID,Fname, Lname, Gender, Work_Email, Personal_Email, Phone, Start_Date, Password)
+values (12345,'trent', 'scarton', 'male', '102114408@student.swin.edu.au', 'Trentscarton@hotmail.com', 041400785, '2019-4-07', 'mysql');
+
+insert into tcabsusers(UID,Fname, Lname, Gender, Work_Email, Personal_Email, Phone, Start_Date, Password)
+values (12345678,'trent', 'scarton', 'male', '102114408@student.swin.edu.au', 'Trentscarton@hotmail.com', 041400785, '2019-4-07', 'mysql');
+
+insert into tcabsusers(UID,Fname, Lname, Gender, Work_Email, Personal_Email, Phone, Start_Date, Password)
+values (1234569,'trent', 'scarton', 'male', '102114408@studentswineduau', 'Trentscarton@hotmailcom', 041400785, '2019-4-07', 'mysql');
+
+insert into tcabsusers(UID,Fname, Lname, Gender, Work_Email, Personal_Email, Phone, Start_Date, Password)
+values (1234568,'trent', 'scarton', 'male', '102114408student.swin.edu.au', 'Trentscarton@hotmail.com', 041400785, '2019-4-07', 'mysql');
+
+insert into tcabsusers(UID,Fname, Lname, Gender, Work_Email, Personal_Email, Phone, Start_Date, Password)
+values (1234566,'trent', 'scarton', 'male', '102114408student.swin.edu.au', 'Trentscarton@hotmail.com', 04140, '2019-4-07', 'mysql');
+
+insert into tcabsusers(UID,Fname, Lname, Gender, Work_Email, Personal_Email, Phone, Start_Date, Password)
+values (1234565,'trent', 'scarton', 'male', '102114408student.swin.edu.au', 'Trentscarton@hotmail.com', 041400785, '2019-4-07', 'mysql');
+
+insert into tcabsusers(UID,Fname, Lname, Gender, Work_Email, Personal_Email, Phone, Start_Date,End_Date, Password)
+values (1234564,'trent', 'scarton', 'male', '102114408@student.swin.edu.au', 'Trentscarton@hotmail.com', 041400785, '2019-4-07','2019-5-03', 'mysql');
+
+insert into tcabsusers(UID,Fname, Lname, Gender, Work_Email, Personal_Email, Phone, Start_Date,End_Date, Password)
+values (1234563,'trent', 'scarton', 'male', '102114408@student.swin.edu.au', 'Trentscarton@hotmail.com', 041400785, '2019-4-07','2019-2-12', 'mysql');
+
+ DELIMITER //
+ CREATE PROCEDURE removeinvalidid()
+   BEGIN
+   insert into tcabsuserserrors(UID,Fname, Lname, Gender, Work_Email, Personal_Email, Phone, Start_Date,End_Date, Password)
+   select * from tcabsusers where char_length(UID) != 7 and char_length(UID) != 9;
+   delete from tcabsusers where char_length(UID) != 7 and char_length(UID) != 9;
+   END //
+ DELIMITER ;
+ 
+ DELIMITER //
+ CREATE PROCEDURE removeinvalidemail()
+   BEGIN
+   insert into tcabsuserserrors(UID,Fname, Lname, Gender, Work_Email, Personal_Email, Phone, Start_Date,End_Date, Password)
+   select * from tcabsusers where Work_Email not like '%@%.%';
+   delete from tcabsusers where Work_Email not like '%@%.%';
+   insert into tcabsuserserrors(UID,Fname, Lname, Gender, Work_Email, Personal_Email, Phone, Start_Date,End_Date, Password)
+   select * from tcabsusers where Personal_Email not like '%@%.%';
+   delete from tcabsusers where Personal_Email not like '%@%.%';
+   END //
+ DELIMITER ;
+ 
+ #rules for phone number length? 
+  DELIMITER //
+ CREATE PROCEDURE removeinvalidephone()
+   BEGIN
+   insert into tcabsuserserrors(UID,Fname, Lname, Gender, Work_Email, Personal_Email, Phone, Start_Date,End_Date, Password)
+   select * from tcabsusers where char_length(phone)< 7 or char_length(phone)>15;
+   delete from tcabsusers where char_length(phone)< 7 or char_length(phone)>15;
+   END //
+ DELIMITER ;
+ 
+   DELIMITER //
+ CREATE PROCEDURE removeinvalidedate()
+   BEGIN
+   insert into tcabsuserserrors(UID,Fname, Lname, Gender, Work_Email, Personal_Email, Phone, Start_Date,End_Date, Password)
+   select * from tcabsusers where Start_Date>End_Date;
+   delete from tcabsusers where Start_Date>End_Date;
+   END //
+ DELIMITER ;
+ 
+ #password rules?
+call removeinvalidid();
+call removeinvalidemail();
+call removeinvalidephone();
+call removeinvalidedate();
+
+select * from tcabsusers;
+#select * from tcabsuserserrors;
+
+
