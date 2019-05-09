@@ -34,16 +34,16 @@ CREATE TABLE Permission (
 );
 
 CREATE TABLE Users (
-	fName				VARCHAR(255)			, -- same here
-	lName				VARCHAR(255)			, -- same here
-	userType		VARCHAR(50)				NOT NULL, -- i don't think this has to be filled
+	fName				VARCHAR(255)			, 
+	lName				VARCHAR(255)			, 
+	-- userType		VARCHAR(50)				NOT NULL, -- weak entity used now
 	gender			VARCHAR(20),
 	pNum				VARCHAR(255),
 	email				VARCHAR(255)			NOT NULL,
 	pwd					VARCHAR(40)				NOT NULL,
 
-	PRIMARY KEY (email),
-	FOREIGN KEY (userType) REFERENCES UserRole (userType)
+	PRIMARY KEY (email)
+	-- FOREIGN KEY (userType) REFERENCES UserRole (userType)
 );
 -- Alter Table Users
 -- Alter Users set Default null;
@@ -69,7 +69,7 @@ CREATE TABLE UnitOffering (
 	cUserName		VARCHAR(255)			, -- i don't think this need to be filled
 	term				VARCHAR(10)				NOT NULL,
 	year				VARCHAR(10)				NOT NULL,
-	censusDate	VARCHAR(20)				, -- i don't think this needs to be filled
+	censusDate	Date				, -- i don't think this needs to be filled
 
 	PRIMARY KEY (unitOfferingID),
 	FOREIGN KEY (unitCode) REFERENCES Unit(unitCode),
@@ -95,11 +95,11 @@ INSERT INTO tcabs.UserRole VALUES ("supervisor");
 INSERT INTO tcabs.UserRole VALUES ("student");
 INSERT INTO tcabs.UserRole VALUES ("nullUser");
 
-INSERT INTO tcabs.Users VALUES ("Daenerys", "Targaryen", "admin", "F", "0412323443", "dtargaryen@gmail.com", "motherofdragons");
-INSERT INTO tcabs.Users VALUES ("Tyrion", "Lannister", "supervisor", "M", "0412332543", "tlannister@gmail.com", "lannisteralwayspaysitsdebt");
-INSERT INTO tcabs.Users VALUES ("John", "Snow", "student", "M", "0412332243", "jsnow@gmail.com", "kingingthenorth");
-INSERT INTO tcabs.Users VALUES ("Robert", "Baratheon", "convenor", "M", "0412332263", "rbaratheon@gmail.com", "rulerofsevenkingdoms");
-INSERT INTO tcabs.Users VALUES ("Arya", "Stark", "admin", "F", "0412332263", "astark@gmail.com", "thereisonlyonegod");
+INSERT INTO tcabs.Users VALUES ("Daenerys", "Targaryen", "F", "0412323443", "dtargaryen@gmail.com", "motherofdragons");
+INSERT INTO tcabs.Users VALUES ("Tyrion", "Lannister", "M", "0412332543", "tlannister@gmail.com", "lannisteralwayspaysitsdebt");
+INSERT INTO tcabs.Users VALUES ("John", "Snow", "M", "0412332243", "jsnow@gmail.com", "kingingthenorth");
+INSERT INTO tcabs.Users VALUES ("Robert", "Baratheon", "M", "0412332263", "rbaratheon@gmail.com", "rulerofsevenkingdoms");
+INSERT INTO tcabs.Users VALUES ("Arya", "Stark", "F", "0412332263", "astark@gmail.com", "thereisonlyonegod");
 
 INSERT INTO tcabs.Unit VALUES ("ICT30001", "Information Technology Project", "FSET");
 INSERT INTO tcabs.Unit VALUES ("INF30011", "Database Implementation", "FSET");
@@ -111,7 +111,7 @@ INSERT INTO tcabs.TeachingPeriod VALUES ("Semester 2", "2019");
 INSERT INTO tcabs.TeachingPeriod VALUES ("Semester 2", "2018");
 INSERT INTO tcabs.TeachingPeriod VALUES ("Winter", "2018");
 INSERT INTO tcabs.TeachingPeriod VALUES ("Summer", "2018");
-
+/*
 INSERT INTO tcabs.UnitOffering VALUES (1, "ICT30001", "rbaratheon@gmail.com", "Semester 2", "2018", "31 March 2018");
 
 INSERT INTO tcabs.Enrolment VALUES (1, 1, "dtargaryen@gmail.com");
@@ -119,10 +119,13 @@ INSERT INTO tcabs.Enrolment VALUES (1, 1, "dtargaryen@gmail.com");
 INSERT INTO tcabs.Functions VALUES (1, "TCABSUSERCreateNewUser");
 
 INSERT INTO tcabs.Permission VALUES ("admin", "TCABSUSERCreateNewUser");
-
+*/
 delimiter $$
 create PROCEDURE TCABSAuthenticateEmail(in Email varchar (255))
 BEGIN
+	if(char_length(Email) <= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "the New Email feild has not been filled";
+	end if;
 	if (Email not Like '%.%' or Email not Like '%@%') then
 		SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Email must contain a '@' and a '.' character";
 	end if;
@@ -145,7 +148,6 @@ create PROCEDURE TCABSUSERCreateNewUser(in Newemail varchar(225), in newpassword
 	    call tcabs.TCABSAuthenticateEmail(Newemail);
 			if (char_length(newpassword) <=3) then
 				SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Password is too short';
-				
 			end if;
             insert into tcabs.Users(email,pwd) values (newemail,newpassword);
 		else
@@ -159,6 +161,9 @@ create PROCEDURE TCABSUSERCreateNewUser(in Newemail varchar(225), in newpassword
 create PROCEDURE TCABSUSERSetUserFirstName(in UserEmail Varchar(255), in NewuserFistname Varchar(255) )
 	BEGIN
 	Declare Errormsg varchar(255) default "no email entered";
+    if(char_length(UserEmail) <= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "the First name Email feild has not been filled";
+	end if;
 	call TCABSValidateNameString(NewuserFistname);
 	if (select count(*) from tcabs.Users where email = UserEmail) = 1 then 
 		update tcabs.Users set Fname = NewuserFistname where email = UserEmail;
@@ -172,6 +177,9 @@ create PROCEDURE TCABSUSERSetUserFirstName(in UserEmail Varchar(255), in Newuser
  DELIMITER //
 create PROCEDURE TCABSValidateNameString(in Username varchar(255))
 begin
+	if (char_length(Username) <= 1) then
+		SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "a name must have at least two characters";
+    end if;
 	 if (Username REGEXP '[0-9]') then 
 	 	SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "a name can't contain numbers";
 	 end if;
@@ -186,6 +194,9 @@ begin
 create PROCEDURE TCABSUSERSetUserLastName(in UserEmail Varchar(255), in NewuserLastname Varchar(255) )
 	BEGIN
 	Declare Errormsg varchar(255) default "no email entered";
+    if(char_length(UserEmail) <= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "the Last name Email feild has not been filled";
+	end if;
 	call TCABSValidateNameString(NewuserLastname);
 	if (select count(*) from tcabs.Users where email = UserEmail) = 1 then 
 		update tcabs.Users set lName = NewuserLastname where email = UserEmail;
@@ -200,6 +211,9 @@ create PROCEDURE TCABSUSERSetUserLastName(in UserEmail Varchar(255), in NewuserL
 create PROCEDURE TCABSUSERSetUserGender(in UserEmail Varchar(255), in NewuserGender Varchar(20) )
 	BEGIN
 	Declare Errormsg varchar(255) default "no email entered";
+    if(char_length(UserEmail) <= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "the Gender Email feild has not been filled";
+	end if;
 	if (select count(*) from tcabs.Users where email = UserEmail) = 1 then 
 		update tcabs.Users set gender = NewuserGender where email = UserEmail;
 	else
@@ -213,6 +227,9 @@ create PROCEDURE TCABSUSERSetUserGender(in UserEmail Varchar(255), in NewuserGen
 create PROCEDURE TCABSUSERSetUserPhone(in UserEmail Varchar(255), in NewPhone Varchar(255) )
 	BEGIN
 	Declare Errormsg varchar(255) default "no email entered";
+    if(char_length(UserEmail) <= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "the Phone Email feild has not been filled";
+	end if;
     call TCABSValidUserPhonenumber(NewPhone);
 	if (select count(*) from tcabs.Users where email = UserEmail) = 1 then 
 		update tcabs.Users set pNum = NewPhone where email = UserEmail;
@@ -231,6 +248,7 @@ create PROCEDURE TCABSValidUserPhonenumber( in NewPhone Varchar(255) )
         end if;
 	END //
  DELIMITER ;
+ 
 
 -- adding user actions. You should initalize with TCABSCreatNewUser if you are creating a new user
 -- Create new user sets user Email (identification) and user Password
@@ -284,6 +302,9 @@ create PROCEDURE TCABSUNITValidateNewUnitName( in NewUnitname varchar(100))
 	BEGIN
 		Declare checkname varchar(255) default "";
         set checkname = Replace(NewUnitname, ' ', '');
+        if(char_length(NewUnitname) <= 1) then
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Unit name must be more than one character";
+        end if;
         if(Substring(checkname,1) REGEXP '[0-9]') then
 			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Unit name must not contain numbers";
         end if;
@@ -295,6 +316,9 @@ create PROCEDURE TCABSUNITValidateNewFacultyName( in NewFacultyname varchar(100)
 	BEGIN
 		Declare checkname varchar(255) default "";
         set checkname = Replace(NewFacultyname, ' ', '');
+        if(char_length(NewFacultyname) <= 1) then
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Faculty name must be more than one character";
+        end if; 
         if(Substring(checkname,1) REGEXP '[0-9]') then
 			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Faculty Name must not contain numbers";
         end if;
@@ -305,6 +329,9 @@ create PROCEDURE TCABSUNITValidateNewFacultyName( in NewFacultyname varchar(100)
 create PROCEDURE TCABSUNITSetNewFacultyName( in EnteredUnitcode Varchar(255), in NewFacultyname varchar(100))
 	BEGIN
     Declare Errormsg varchar(255) default "no Faculty entered";
+    if(char_length(EnteredUnitcode) <= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "the Unit code for new Faculty has not been filled";
+	end if;
         call TCABSUNITValidateNewFacultyName(NewFacultyname);
 	if (select count(*) from tcabs.Unit where unitCode = EnteredUnitcode) = 1 then 
 		update tcabs.Unit set faculty = NewFacultyname where unitCode = EnteredUnitcode;
@@ -322,37 +349,88 @@ call TCABSUNITAddnewunit("ICT30002", "Information Technology Project");
 call TCABSUNITSetNewFacultyName("ICT30002", "Buisnesses and Law");
  
 
-/*
+
 under construction
        DELIMITER //
 create PROCEDURE TCABSUNITOFFERINGAddNewOffering( in OfferedUnitID Varchar(255), in Offeredterm varchar(255), in Offeredyear varchar(255))
 	BEGIN
-		if(select count(*) from tcabs.Unit where unitCode = OfferedUnitID <> 1) then
+		if(char_length(OfferedUnitID) <= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "the Unit feild has not been filled";
+		end if;
+		if((select count(*) from tcabs.Unit where unitCode = OfferedUnitID) <> 1) then
 			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "the Unit you entered does not exist";
 		end if;
-        if(select count(*) from tcabs.teachingperiod where term = Offeredterm and teachingperiod.year = Offeredyear)
-	
+        call TCABSUNITOFFERINGValidateOfferingPeriod(Offeredterm,Offeredyear);
+		insert into UnitOffering(unitCode, term, year) values (OfferedUnitID,Offeredterm,Offeredyear);
 	END //
  DELIMITER ;
 
- select * from Unitoffering;
-/*
-CREATE TABLE UnitOffering (
-	unitOfferingID			INT				AUTO_INCREMENT,
-	unitID							INT				NOT NULL,
-	convenorID					INT				,
-	term				VARCHAR(10)				NOT NULL,
-	year				VARCHAR(10)				NOT NULL,
-	censusDate	VARCHAR(20)				,
+       DELIMITER //
+create PROCEDURE TCABSUNITOFFERINGValidateOfferingPeriod(in Offeredterm varchar(255), in Offeredyear varchar(255))
+	BEGIN
+    Declare ErrormsgTeachingperiod varchar(255) default "no Values entered";
+		if (char_length(Offeredterm) <= 1 or char_length(Offeredyear) <= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "values have not been entered into the feilds";
+        end if;
+		if((select count(*) from tcabs.teachingperiod where term = Offeredterm and teachingperiod.year = Offeredyear) <> 1) then
+			set ErrormsgTeachingperiod = concat("There is no teaching period for ", Offeredterm, " ", Offeredyear);
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = ErrormsgTeachingperiod;
+		end if;
+	END //
+ DELIMITER ;
+ 
+        DELIMITER //
+create Procedure TCABSUNITOFFERINGGetKey(in OfferedUnitID Varchar(255), in Offeredterm varchar(255), in Offeredyear varchar(255), out ValuesunitOfferingID int)
+	BEGIN
+    Declare ErrormsgTeachingperiod varchar(255) default "no Values entered";
+		if (char_length(Offeredterm) <= 1 or char_length(Offeredyear) <= 1 or char_length(OfferedUnitID) <= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "values have not been entered into the feilds";
+        end if;
+		select unitOfferingID into ValuesunitOfferingID from UnitOffering where unitCode = OfferedUnitID and term = Offeredterm and year = Offeredyear;
+        
+        if (ValuesunitOfferingID is null) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Invalid Unit code, term and year combination ";
+		end if;
+	END //
+ DELIMITER ;
+ 
+         DELIMITER //
+create Procedure TCABSUNITOFFERINGSetCensusDate(in OfferedKey int, in OfferedCencusdate varchar(255))
+	BEGIN
+    Declare ErrormsgTeachingperiod varchar(255) default "no Values entered";
+		if (char_length(OfferedKey) < 1 or char_length(OfferedCencusdate) <= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "values have not been entered into the feilds";
+        end if;
+		if ((select Count(*) from UnitOffering where unitOfferingID = OfferedKey) <> 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Entered key is not found";
+        end if;
+        call TCABSUNITOFFERINGValidateCenDate(OfferedCencusdate);
+        update tcabs.Unitoffering set censusDate = STR_TO_DATE(OfferedCencusdate, '%Y-%m-%d') where unitOfferingID = OfferedKey; 
+	END //
+ DELIMITER ;
+-- 0 row(s) affected, 1 warning(s): 1411 Incorrect datetime value: '"'06-3-2019'"' for function str_to_date
+-- 0 row(s) affected, 1 warning(s): 1411 Incorrect datetime value: ''06-3-2019'' for function str_to_date
+-- 0 row(s) affected, 1 warning(s): 1411 Incorrect datetime value: '06-3-2019' for function str_to_date
 
-	PRIMARY KEY (unitOfferingID),
-	FOREIGN KEY (unitID) REFERENCES Unit(unitID),
-	FOREIGN KEY (convenorID) REFERENCES Users(userID),
-	FOREIGN KEY (term, year) REFERENCES TeachingPeriod(term, year)
-);
+         DELIMITER //
+create Procedure TCABSUNITOFFERINGValidateCenDate(in OfferedCencusdate varchar(255))
+	BEGIN
+    Declare ErrormsgTeachingperiod varchar(255) default "no Values entered";
+		
+		-- if (DATE(STR_TO_DATE(OfferedCencusdate, "%Y-%m-%d")) IS not NULL and OfferedCencusdate REGEXP "^[0-9\.]+$") then
+        if ((STR_TO_DATE(OfferedCencusdate, "%Y-%m-%d")) IS NULL) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "invalid date entry";
+        end if;
+	END //
+ DELIMITER ;
+ -- add unit offering 
+ -- must initalise new unit offering with Add new offering. Pass in a matching Subject code and a matching Offering term and Offering year combo
+ call TCABSUNITOFFERINGAddNewOffering("ICT30002", "Semester 1", "2019");
+ -- this procedures accepts a subject code, offering term and offering year (@ValuesunitOfferingID feild empty). If they are a registored combonation then @ValuesunitOfferingID returns the key for that combination
+ call TCABSUNITOFFERINGGetKey("ICT30002", "Semester 1", "2019", @ValuesunitOfferingID);
+ -- utalised the offering key (@ValuesunitOfferingID generated in TCABSUNITOFFERINGGetKey) and the entered string which is then verified to be a date and entered into census date
+ -- for this one you only need to pass the census date but if you want to start alter another record you need to run the TCABSUNITOFFERINGGetKey procedure again
+ call TCABSUNITOFFERINGSetCensusDate(@ValuesunitOfferingID,"2019-3-03");
 
-INSERT INTO tcabs.UnitOffering VALUES (1, 1, 4, "Semester 2", "2018", "31 March 2018");
-*/
-
-select * from Users;
-select * from teachingperiod;
+-- cUserName can only be developed after the roles are done so i'll come back to this then 
+ 
