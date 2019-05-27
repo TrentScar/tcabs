@@ -252,9 +252,9 @@ INSERT INTO tcabs.TeachingPeriod VALUES ("Summer", "2018", STR_TO_DATE("2019-5-3
 
 INSERT INTO tcabs.UserCat VALUES ("dtargaryen@gmail.com", "admin");
 INSERT INTO tcabs.UserCat VALUES ("dtargaryen@gmail.com", "convenor");
-INSERT INTO tcabs.UserCat VALUES ("jsnow@gmail.com", "admin");
-INSERT INTO tcabs.UserCat VALUES ("astark@gmail.com", "admin");
-INSERT INTO tcabs.UserCat VALUES ("astark1@gmail.com", "admin");
+INSERT INTO tcabs.UserCat VALUES ("jsnow@gmail.com", "student");
+INSERT INTO tcabs.UserCat VALUES ("astark@gmail.com", "student");
+INSERT INTO tcabs.UserCat VALUES ("astark1@gmail.com", "student");
 
 
 INSERT INTO tcabs.UnitOffering VALUES (1, "ICT30001", "dtargaryen@gmail.com", "Semester 2", "2018", "2018-06-05");

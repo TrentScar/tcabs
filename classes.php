@@ -459,29 +459,66 @@
 		public $enrolmentID;
 		public $sUserName;
 
-		public function enrolUser($userEmail, $unitCode, $term, $year) {
-			
-			try {
-				$unitOffObj = new UnitOffering();
-				$this->offerings = $unitOffObj->getOfferings($unitCode);
+		public function getAllEnrolments() {
+		
+			$stmt = $GLOBALS['conn']->prepare("SELECT E.enrolmentID, E.unitOfferingID, 
+								E.sUserName, U.unitCode, UN.unitName, U.term, U.year 
+								FROM Enrolment E INNER JOIN UnitOffering U
+								ON U.unitOfferingID = E.unitOfferingID
+								INNER JOIN Unit UN
+								ON U.unitCode = UN.unitCode
+							");
 
-				print_r($this->offerings);
-			} catch(mysqli_sql_exception $e) {
-				throw $e;
-			}
-
-			//$stmt = $GLOBALS['conn']->prepare("CALL TCABS_enrolment_add(?, ?, ?, ?)");
-			//$stmt->bind_param("ssss", $userEmail, $unitCode, $term, $year);
-			/*
 			try {
 				$stmt->execute();
-				echo "<script type='text/javascript'>alert('Unit Offering added successfully');</script>";
+				$stmt->store_result();
+				$stmt->bind_result(
+					$enrolmentID, 
+					$unitOfferingID,
+					$sUserName, 
+					$unitCode, 
+					$unitName, 
+					$term, 
+					$year
+				);
+
+				$enrolments = [];
+				$i = 0;
+
+				if($stmt->num_rows > 0) {
+					while($stmt->fetch()) {
+						$enrolments[$i] = array(
+							'enrolmentID' => $enrolmentID,
+							'unitOfferingID' => $unitOfferingID,
+							'sUserName' => $sUserName,
+							'unitCode' => $unitCode,
+							'unitName' => $unitName,
+							'term' => $term,
+							'year' => $year
+						);
+						$i = $i + 1;
+					}
+				}
+			} catch(mysqli_sql_exception $e) {
+				// set enrolments array back to empty
+				$enrolments = [];
+				throw $e;
+			}
+			return $enrolments;
+		}
+
+		public function enrolUser($userEmail, $unitCode, $term, $year) {
+
+			$stmt = $GLOBALS['conn']->prepare("CALL TCABS_enrolment_add(?, ?, ?, ?)");
+			$stmt->bind_param("ssss", $userEmail, $unitCode, $term, $year);
+			
+			try {
+				$stmt->execute();
 			} catch(mysqli_sql_exception $e) {
 				throw $e;
 			}
-			 */
 
-			//$stmt->close();
+			$stmt->close();
 		}
 	}
 ?>

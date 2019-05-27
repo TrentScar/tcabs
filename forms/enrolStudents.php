@@ -15,16 +15,52 @@
 			
 				if(isset($_POST['submit'])) {
 
-					$enrolObj = new Enrolment;
 
 					// ernol single student
 					if($_POST['submit'] === "enrol") {
+
+						$enrolObj = new Enrolment;
 						try {
 							$enrolObj->enrolUser($_POST['email'], $_POST['unitCode'], $_POST['term'], $_POST['year']);
+							echo "<script type='text/javascript'>alert('Student enrolled successfully!');</script>;";
 						} catch(mysqli_sql_exception $e) {
 							echo "<script type='text/javascript'>alert('{$e->getMessage()}');</script>";
 						}
 					} else if($_POST['submit'] === "bulkEnrol") {
+
+						try {
+							$row = parse_csv_file($_FILES['csvFile']['tmp_name']);
+							$enrolObj = new Enrolment;
+
+							$i = 1;
+							foreach($row as $index => $dataArr) {
+								try {
+
+									// there is no need of census date in unit table, they should be in unit offering table
+									$enrolObj->enrolUser(
+										$dataArr['userEmail'], 
+										$dataArr['unitCode'], 
+										$dataArr['term'], 
+										$dataArr['year'], 
+									);
+
+								} catch(mysqli_sql_exception $e) {
+									throw $e;
+								}
+								$i = $i +1;
+							}
+							echo "<script type='text/javascript'>alert('{$i} rows added successfully!');</script>";
+						} catch(Exception $e) {
+							echo "<script type='text/javascript'>alert('{$e->getMessage()}');</script>";
+						}
+					} else if($_POST['submit'] == 'search') {
+
+						try {
+							$enrolObj = new Enrolment;
+							$searchResults = $enrolObj->getAllEnrolments();
+						} catch(mysqli_sql_exception $e) {
+							echo "<script type='text/javascript'>alert('{$e->getMessage()}');</script>";
+						}
 
 					}
 				}
@@ -52,10 +88,13 @@
 
 		<ul class="nav nav-tabs">
   		<li class="nav-item">
-    		<a class="nav-link active" data-toggle="tab" href="#home">Enrol Student</a>
+    		<a class="nav-link <?php if((isset($_POST['submit']) && $_POST['submit'] == 'enrol') || $_SERVER['REQUEST_METHOD'] == 'GET') { echo 'active';} ?>" data-toggle="tab" href="#home">Enrol Student</a>
   		</li>
   		<li class="nav-item">
-    		<a class="nav-link" data-toggle="tab" href="#menu1">Bulk Import via CSV</a>
+    		<a class="nav-link <?php if(isset($_POST['submit']) && $_POST['submit'] == 'bulkEnrol') { echo 'active';} ?>" data-toggle="tab" href="#menu1">Bulk Import via CSV</a>
+  		</li>
+  		<li class="nav-item">
+    		<a class="nav-link <?php if(isset($_POST['submit']) && $_POST['submit'] == 'search') { echo 'active';} ?>" data-toggle="tab" href="#menu2">Veiw Enrolments</a>
   		</li>
 		</ul>
 
@@ -63,7 +102,7 @@
 		<div class="tab-content">
 
 			<!-- Tab 1 -->
-  		<div class="tab-pane container active" id="home">
+  		<div class="tab-pane container <?php if((isset($_POST['submit']) && $_POST['submit'] == 'enrol') || $_SERVER['REQUEST_METHOD'] == 'GET') { echo 'active show';} ?>" id="home">
 				<form action="enrolStudents.php" method ="post" class="was-validated"><br/>
   	  		<p class="h4 mb-4 text-center">Enrol Students into a Unit</p>
 					<input type="text" id="email" name="email" class="form-control" placeholder="Student Email" required><br>
@@ -71,27 +110,82 @@
  	   			<input type="text" id="year" name="year" class="form-control" placeholder="Enter Year" required><br>
 					<select class="browser-default custom-select" id="term" name="term" required>
  	  				<option value="" disabled="" selected="">Select Term</option>
- 	    			<option value="sem-1">Semester 1</option>
- 	    			<option value="sem-2">Semester 2</option>
- 	   		 		<option value="winter">Winter</option>
- 	   		 		<option value="summer">Summer</option>
+ 	    			<option value="Semester 1">Semester 1</option>
+ 	    			<option value="Semester 2">Semester 2</option>
+ 	   		 		<option value="Winter">Winter</option>
+ 	   		 		<option value="Summer">Summer</option>
  	  			</select><br><br>
   				<button class="btn btn-info my-4 btn-block" type="submit" name="submit" value="enrol">Enrol Student</button>
 				</form>
 			</div>
 
 			<!-- Tab 2 -->
-  		<div class="tab-pane container fade" id="menu1">
-				<form action="enrolStudents.php" method ="post" class="was-validated"><br/>
+  		<div class="tab-pane container fade <?php if((isset($_POST['submit']) && $_POST['submit'] == 'bulkEnrol')) { echo 'active show';} ?>" id="menu1">
+				<form action="enrolStudents.php" method ="post" class="was-validated" enctype="multipart/form-data"><br/>
   	  		<p class="h4 mb-4 text-center">Bulk Import</p>
   				<div class="form-group">
-    				<label for="csvFileForm">Please choose a CSV file to upload</label>
-   			 		<input type="file" class="form-control-file" id="csvFileForm">
+    				<label for="csvFile">Please choose a CSV file to upload</label>
+						<input type="hidden" name="MAX_FILE_SIZE" value="30000" />
+   			 		<input type="file" name="csvFile" class="form-control-file" id="csvFile">
   				</div>
   				<button class="btn btn-info my-4 btn-block" type="submit" name="submit" value="bulkEnrol">Enrol Students</button>
-				</form>
+				</form><br>
 			</div>
 
+			<!-- Tab 3 -->
+			<div class="tab-pane container fade <?php if(isset($_POST['submit']) && $_POST['submit'] == 'search') { echo 'active show';} ?>" id="menu2">
+				<form action="enrolStudents.php" method ="post" class="was-validated"><br>
+ 		 	  	<p class="h4 mb-4 text-center">All Enrolments</p>
+					<div class="search-box">
+ 		 				<button class="btn btn-primary" name="submit" value="search">Get All Enrolments</button>
+						<div class="result"></div>
+					</div>
+				</form><br>
+
+				<!-- Show Search Results -->
+				<?php 
+					if(isset($_POST['submit']) && $_POST['submit'] == 'search') {
+				?>		
+
+				<div>
+					<form action="enrolStudents.php" method="post">
+						<table style="width: 100%;">
+							<tr>
+ 		   					<th style="width: 15%;">Email</th>
+								<th style="width: 15%;">UnitCode</th>
+								<th style="width: 30%;">UnitName</th>
+								<th style="width: 10%;">Term</th>
+								<th style="width: 5%;">Year</th>
+								<th style="width: 10%;"></th>
+ 		   					<th style="width: 10%;"></th>
+ 		   				</tr>
+
+							<?php 
+
+								foreach($searchResults as $key => $value) {
+									$sUserName = $value['sUserName'];
+									$unitCode = $value['unitCode'];
+									$unitName = $value['unitName'];
+									$term = $value['term'];
+									$year = $value['year'];
+							?>
+
+							<tr style="border-top: 1px solid lightgrey;">
+								<td><?php echo $sUserName;?></td>
+								<td><?php echo $unitCode;?></td>
+								<td><?php echo $unitName;?></td>
+								<td><?php echo $term;?></td>
+								<td><?php echo $year;?></td>
+								<td><button type="submit" class="btn btn-primary" name="update" value="<?php echo '';?>" >Update</button></td>
+								<td><button type="submit" class="btn btn-danger" name="delete" value="<?php echo	'';?>" >Delete</button></td>
+							</tr>
+
+							<?php  }?>
+
+						</table>
+					</form><br>
+				</div>
+			<?php  }?>
 		</div>
 	</body>
   <?php include "../views/footer.php";  ?>  

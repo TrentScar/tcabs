@@ -34,6 +34,7 @@
 									$_POST['pwd'],
 									$_POST['roles']
 								);
+								echo "<script type='text/javascript'>alert('');</script>";
 							} catch(mysqli_sql_exception $e) {
 								echo "<script type='text/javascript'>alert('{$e->getMessage()}');</script>";
 							}
