@@ -40,7 +40,37 @@
 						}
 
 					// if bulk import form button pressed
-					} else if($_POST['submit'] === "bulkAddUnits") {
+					} else if($_POST['submit'] === "bulkImport") {
+
+						try {
+							$row = parse_csv_file($_FILES['csvFile']['tmp_name']);
+							$userObj = new User;
+
+							$i = 1;
+							foreach($row as $index => $dataArr) {
+								try {
+
+									// problem with csv file rollback because registerUser uses commit
+									$userObj->registerUser(
+										$dataArr['fName'], 
+										$dataArr['lName'], 
+										$dataArr['gender'], 
+										$dataArr['pNum'], 
+										$dataArr['email'], 
+										$dataArr['pwd'],
+										array(0 => 'nullUser')
+									);
+
+								} catch(mysqli_sql_exception $e) {
+									echo "<script type='text/javascript'>alert('Row {$i} : {$e->getMessage()}');</script>";
+									throw new Exception('Please use valid data in csv file!');
+								}
+								$i = $i +1;
+							}
+							
+						} catch(Exception $e) {
+							echo "<script type='text/javascript'>alert('{$e->getMessage()}');</script>";
+						}
 			
 					// if search form submit button pressed
 					} else if($_POST['submit'] === "search") {
@@ -131,11 +161,12 @@
 		
 		<!-- Tab 2 -->	
   	<div class="tab-pane container fade <?php if(isset($_POST['submit']) && $_POST['submit'] == 'bulkImport') { echo 'active show';} ?>" id="menu1">
-  		<form action="registerUser.php" method ="POST" class="was-validated"><br>
+  		<form action="registerUser.php" method ="POST" enctype="multipart/form-data" class="was-validated"><br>
   	  	<p class="h4 mb-4 text-center">Bulk Import via CSV</p>
   			<div class="form-group">
-    			<label for="csvFileForm">Please choose a CSV file to upload</label>
-   			 	<input type="file" class="form-control-file" id="csvFileForm">
+    			<label for="csvFile">Please choose a CSV file to upload</label>
+   			 	<input type="file" name="csvFile" class="form-control-file" id="csvFile">
+					<input type="hidden" name="MAX_FILE_SIZE" value="30000" />
   			</div>
   			<button class="btn btn-info my-4 btn-block" type="submit" name="submit" value="bulkImport">Register Units</button>
 			</form>

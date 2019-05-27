@@ -2,6 +2,49 @@
 	// Define different classes with relevant and useful functions here
 	require("db-conn.php");	// connect to database
 
+	function parse_csv_file($csvfile) {
+
+		// check if file exists -- exit if error
+		if (!file_exists('../user.csv') ) {
+			throw new Exception('File not found.');
+		}
+
+		// check if file is a csv file - exit if error
+		if($_FILES['csvFile']['type'] !== "text/csv") {
+			throw new Exception('File is not csv!!');
+		} 
+
+		$csv = Array();
+		$rowcount = 0;
+
+		if ($handle = fopen($csvfile, "r")) {
+
+			$max_line_length = defined('MAX_LINE_LENGTH') ? MAX_LINE_LENGTH : 10000;
+			$header = fgetcsv($handle, $max_line_length, "	");
+			$header_colcount = count($header);
+
+			while (($row = fgetcsv($handle, $max_line_length, "	")) !== FALSE) {
+				$row_colcount = count($row);
+
+				if ($row_colcount == $header_colcount) {
+					$entry = array_combine($header, $row);
+					$csv[] = $entry;
+				} else {
+					throw new exception("CSV Reader: Invalid number of columns at line - " . ($rowcount + 2));
+					return null;
+				}
+				$rowcount++;
+			}
+
+			fclose($handle);
+
+		} else {
+			error_log("csvreader: Could not read CSV \"$csvfile\"");
+			return null;
+		}
+		return $csv;
+	}
+
 	class Role {
 		public $roles;
 
@@ -58,7 +101,6 @@
 		protected function getPerms($userRoles) {
 
 			if($userRoles == NULL) {
-				echo "No roles assigned"; 
 			} else {
 
 				$subQuery = "";
