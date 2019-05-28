@@ -311,10 +311,10 @@
 	}
 
 	class Unit {
-		private $unitName;
-		private $unitFaculty;
+		public $unitName;
+		public $unitFaculty;
 
-		protected $unitCode;
+		public $unitCode;
 
 		public function getUnit($unitCode) {
 
@@ -378,6 +378,23 @@
 				throw $e;
 				return null;
 			}
+		}
+
+		public function updateUnit($unit) {
+			
+			$stmt = $GLOBALS['conn']->prepare("UPDATE Unit 
+								SET unitCode = ?, unitName = ?, faculty = ?
+								WHERE unitCode = ?");
+
+			$stmt->bind_param("ssss", $unit->unitCode, $unit->unitName, $unit->unitFaculty, $unit->unitCode);
+
+			try {
+				$stmt->execute();
+			} catch(mysqli_sql_exception $e) {
+				throw $e;
+			}
+
+			$stmt->close();
 		}
 
 		public function registerUnit($uCode, $uName, $uFaculty) {
