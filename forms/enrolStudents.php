@@ -62,6 +62,21 @@
 							echo "<script type='text/javascript'>alert('{$e->getMessage()}');</script>";
 						}
 
+					} else if($_POST['submit'] == 'upEnrol') {
+						
+						$enrolObj = new Enrolment;
+
+						$enrolObj->enrolmentID = $_POST['enrolmentID'];
+						$enrolObj->unitOfferingID = $_POST['unitOfferingID'];
+						//$enorlObj->sUserName = $_POST['sUserName'];	 //gives error default with empty value
+						print_r($enrolObj);
+
+						try {
+
+						} catch(mysqli_sql_exception $e) {
+							
+						}
+
 					}
 				}
 			}
@@ -100,6 +115,29 @@
 
 		<!-- Tab panes -->
 		<div class="tab-content">
+
+			<!-- Edit Unit only when Update button pressed -->
+			<?php
+				if(isset($_POST['upEnrol'])) {
+					$enrolObj = new Enrolment;
+					$searchResults = $enrolObj->getAllEnrolments();
+					foreach($searchResults as $key => $value) {
+						if($value['enrolmentID'] == $_POST['upEnrol']) {
+							$result = $value;
+			?>
+			
+			<div>
+				<form action="enrolStudents.php" method="post" class="was-validated"><br>
+					<p class="h4 mb-4 text-center">Edit Enrolment for (<?php echo "({$result['sUserName']})"; ?>)</p>
+					<input type="text" id="enrolmentID" name="enrolmentID" class="form-control" value="<?php echo $result['enrolmentID']; ?>" required><br>
+					<input type="text" id="unitOfferingID" name="unitOfferingID" class="form-control" value="<?php echo $result['unitOfferingID']; ?>" required><br>
+					<input type="text" id="sUserName" name="sUserName" class="form-control" value="<?php echo $result['sUserName']; ?>" required><br><br>
+					<button class="btn btn-info my-4 btn-block" type="submit" name="submit" value="upEnrol">Edit Enrolment</button>
+				</form>
+			</div>
+			<?php  } ?>
+			<?php  } ?>
+			<?php  } ?>
 
 			<!-- Tab 1 -->
   		<div class="tab-pane container <?php if((isset($_POST['submit']) && $_POST['submit'] == 'enrol') || $_SERVER['REQUEST_METHOD'] == 'GET') { echo 'active show';} ?>" id="home">
@@ -163,6 +201,7 @@
 							<?php 
 
 								foreach($searchResults as $key => $value) {
+									$enrolmentID = $value['enrolmentID'];
 									$sUserName = $value['sUserName'];
 									$unitCode = $value['unitCode'];
 									$unitName = $value['unitName'];
@@ -176,8 +215,8 @@
 								<td><?php echo $unitName;?></td>
 								<td><?php echo $term;?></td>
 								<td><?php echo $year;?></td>
-								<td><button type="submit" class="btn btn-primary" name="update" value="<?php echo '';?>" >Update</button></td>
-								<td><button type="submit" class="btn btn-danger" name="delete" value="<?php echo	'';?>" >Delete</button></td>
+								<td><button type="submit" class="btn btn-primary" name="upEnrol" value="<?php echo $enrolmentID;?>" >Update</button></td>
+								<td><button type="submit" class="btn btn-danger" name="delEnrol" value="<?php echo $enrolmentID;?>" >Delete</button></td>
 							</tr>
 
 							<?php  }?>

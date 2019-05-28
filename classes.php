@@ -414,13 +414,13 @@
 	}
 
 	class UnitOffering extends Unit {
-		protected $uOffID;
-		protected $cUserName;
-		protected $term;
-		protected $year;
-		protected $censusDate;
+		public $uOffID;
+		public $cUserName;
+		public $term;
+		public $year;
+		public $censusDate;
 
-		protected $offerings;
+		public $offerings;
 
 		// initialize the object with all unit Offerings of a unit
 		public function __construct() {
@@ -472,9 +472,10 @@
 		}
 	}
 
-	class Enrolment extends UnitOffering{
+	class Enrolment{
 		public $enrolmentID;
 		public $sUserName;
+		public $unitOfferingID;
 
 		public function getAllEnrolments() {
 		
