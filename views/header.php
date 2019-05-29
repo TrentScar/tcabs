@@ -25,7 +25,7 @@
 					"registerTeam.php" => "Manage Teams",
 					"registerProject.php" => "Manage Projects",
 					"setupRoles.php" => "Manage Roles",
-					"allocateRoles.php" => "Allocate Roles",
+					"setPeerAssessment.php" => "Set Peer Assessment",
 				);
 
 				$supervisorArr = array(
@@ -34,7 +34,7 @@
 
 				$studentArr = array(
 					"studentTasks.php" => "Tasks",
-					"studentPeerAssess.php" => "Peer Assessment",
+					//"studentPeerAssess.php" => "Peer Assessment", 	// not in scope
 					"studentSupervisorMeeting.php" => "Supervisor Meetings",
 					"studentTeamMeeting.php" => "Team Meetings",
 					

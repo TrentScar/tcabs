@@ -114,7 +114,7 @@ CREATE TABLE Enrolment (
 
  CREATE TABLE OfferingStaff (
 	OfferingStaffID			int				auto_increment,
-    UserName				VARCHAR(255)	NOT NULL,
+  UserName				VARCHAR(255)	NOT NULL,
 	UnitOfferingID			int				NOT NULL,
 	PRIMARY KEY (OfferingStaffID),
     FOREIGN KEY (UserName) REFERENCES Users(email),
@@ -256,15 +256,12 @@ INSERT INTO tcabs.UserCat VALUES ("jsnow@gmail.com", "student");
 INSERT INTO tcabs.UserCat VALUES ("astark@gmail.com", "student");
 INSERT INTO tcabs.UserCat VALUES ("astark1@gmail.com", "student");
 
-
 INSERT INTO tcabs.UnitOffering VALUES (1, "ICT30001", "dtargaryen@gmail.com", "Semester 2", "2018", "2018-06-05");
 
-/*
-INSERT INTO tcabs.Enrolment VALUES (1, 1, "dtargaryen@gmail.com");
-
-INSERT INTO tcabs.Functions VALUES (1, "TCABSUSERCreateNewUser");
-*/
-
+INSERT INTO tcabs.Enrolment VALUES("1", "1", "astark@gmail.com");
+INSERT INTO tcabs.OfferingStaff VALUES ("1", "dtargaryen@gmail.com", "1");
+INSERT INTO tcabs.Team VALUES ("1", "just a name", "1", "asdf");
+INSERT INTO tcabs.TeamMember VALUES("213213", "1", "1");
 
 delimiter $$
 create PROCEDURE TCABSAuthenticateEmail(in Email varchar (255))

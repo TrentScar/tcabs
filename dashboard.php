@@ -6,6 +6,15 @@
 	if(!isset($_SESSION['logged_in'])) {
 		header("location: /tcabs/login.php");
 	}
+	
+	//$enrolObj = new Enrolment;
+	//print_r($enrolObj->getUnitEnrolments("ICT30002", "Semester 1", "2019"));
+
+	//$teamObj = new TeamMember;
+	//print_r($teamObj->searchMembers("%a%"));
+	
+	//$teamObj = new TeamMember;
+	//print_r($teamObj->getMembers(1));
 
 	// subquery returns more than one row(error)
 	//$uOffObj = new UnitOffering("STA10003");
