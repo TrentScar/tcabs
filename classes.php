@@ -75,6 +75,13 @@
 
 		public function assignRoles($userEmail, $userRoleArr) {
 			// how to roll back if error occurs for some role
+			
+			// delete current roles
+			$stmt = $GLOBALS['conn']->prepare("delete from UserCat where email = ?");
+			$stmt->bind_param('s', $userEmail);
+			$stmt->execute();
+			
+			
 			$stmt = $GLOBALS['conn']->prepare("call TCABSUserCatAssignUserARole(?, ?)");
 
 			foreach($userRoleArr as $userRole => $value) {
@@ -308,6 +315,38 @@
 
 			$stmt->close();
 		}
+		
+// to edit a user updating Users and UserCat tables
+		public function updateUser($fName, $lName, $gender, $pNum, $email, $roles) {
+
+			// convert pNum to ###-###-####
+			// will only work on 10-digit number without country code
+			$pNum = sprintf("%s-%s-%s", substr($pNum, 0, 3), substr($pNum, 3, 3), substr($pNum, 6, 4));
+
+			// encrypt password
+
+			$stmt = $GLOBALS['conn']->prepare("call TCABS_User_Update(?, ?, ?, ?, ?)");
+			$stmt->bind_param('sssss', $fName, $lName, $gender, $pNum, $email);
+
+			try {
+				$GLOBALS['conn']->begin_transaction();
+
+				$stmt->execute();
+
+				// to update userCat table
+				$roleObj = new Role;
+				$roleObj->assignRoles($email, $roles);
+
+				$GLOBALS['conn']->commit();
+
+			} catch(mysqli_sql_exception $e) {
+				$GLOBALS['conn']->rollback();
+				throw $e;
+			}
+
+			$stmt->close();
+		}
+		
 	}
 
 	class Unit {
