@@ -114,10 +114,10 @@
 			<div>
 				<form action="registerUnits.php" method="post" class="was-validated"><br>
 					<p class="h4 mb-4 text-center">Edit Unit (<?php echo ($_POST['update']); ?>)</p>
-					<input type="text" id="unitCode" name="unitCode" class="form-control" value="<?php echo $value['unitCode']; ?>"  required><br>
+					<input type="text" id="unitCode" name="unitCode" class="form-control" value="<?php echo $value['unitCode']; ?>"  readonly><br>
 					<input type="text" id="unitName" name="unitName" class="form-control" value="<?php echo $value['unitName']; ?>" required><br>
 					<select class="browser-default custom-select" id="unitFaculty" name="unitFaculty" required>
-						<option value="" disabled="" selected=""><?php echo $value['unitFaculty']; ?></option>
+						<option selected hidden value="<?php echo $value['gender']; ?>"><?php echo $value['unitFaculty']; ?></option>
 						<option value="FBL">Faculty of Business and Law</option>
 						<option value="FHAD">Faculty of Health, Arts and Design</option>
 						<option value="FSET">Faculty of Science, Engineering and Technology</option>
