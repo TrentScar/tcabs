@@ -412,6 +412,23 @@ CREATE PROCEDURE TCABS_User_register(IN fName VARCHAR(255), IN lName VARCHAR(255
 	END// 
 DELIMITER ;
 
+DELIMITER //
+CREATE PROCEDURE TCABS_User_Update(IN fName VARCHAR(255), IN lName VARCHAR(255), IN gender VARCHAR(20), IN pNum VARCHAR(255), IN usrEmail VARCHAR(255)) 
+	BEGIN
+		DECLARE EXIT HANDLER FOR 45000 ROLLBACK;
+
+		START TRANSACTION;
+			-- CALL tcabs.TCABSUSERCreateNewUser(email , pwd); Since we are only updating we don't need this - ssavage 29 05 2019 
+			CALL tcabs.TCABSUSERSetUserFirstName(email, fName);
+			CALL tcabs.TCABSUSERSetUserLastName(email, lName);
+			CALL tcabs.TCABSUSERSetUserGender(email, gender);
+			CALL tcabs.TCABSUSERSetUserPhone(email, pNum);
+			-- confused about the procedure below
+			-- CALL TCABSUserCatAssignUserARole(email, uRole);
+		COMMIT;
+	END// 
+DELIMITER ;
+
 
 -- adding user actions. You should initalize with TCABSCreatNewUser if you are creating a new user
 -- Create new user sets user Email (identification) and user Password
@@ -553,7 +570,8 @@ create Procedure TCABSUserCatAssignUserARole(in UserEmail varchar(255), in RoleN
         end if;
         
         if ((select count(*) from UserCat where userType = RoleName and email = UserEmail) >= 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered User already has the assigned Role";
+			-- SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered User already has the assigned Role";
+            update UserCat set usertype = RoleName where email = UserEmail;
 		end if;
         insert into UserCat values (UserEmail,RoleName);
 	END //
