@@ -552,10 +552,21 @@ create Procedure TCABSUserCatAssignUserARole(in UserEmail varchar(255), in RoleN
 			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered Role name does not exist";
         end if;
         
-        if ((select count(*) from UserCat where userType = RoleName and email = UserEmail) >= 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered User already has the assigned Role";
+	        if ((select count(*) from UserCat where userType = RoleName and email = UserEmail) >= 1) then
+			SIGNAL
+            SQLSTATE '45000' SET MESSAGE_TEXT = "entered User already has the assigned Role";
 		end if;
+        
+        if (RoleName = "student") then 
+        	if((select count(*) from usercat where email = UserEmail)>= 1) then SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered User Cannot be a student when the hold another role";
+            end if;
+          ELSE
+            IF ((SELECT count(*) from Usercat where email=Useremail and userType = rolename) >= 1) then SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered User is a student and cannot hold another role";
+            end if;
+
+          end if;
         insert into UserCat values (UserEmail,RoleName);
+	
 	END //
  DELIMITER ;
 
