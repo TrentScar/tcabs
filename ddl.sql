@@ -1,6 +1,8 @@
- -- SET SQL_SAFE_UPDATES = 0;
- -- SET GLOBAL log_bin_trust_function_creators = 1;
- -- SET autocommit=0;
+/*
+SET SQL_SAFE_UPDATES = 0;
+SET GLOBAL log_bin_trust_function_creators = 1;
+SET autocommit=0;
+*/
 DROP DATABASE tcabs;
 CREATE DATABASE tcabs;
 
@@ -131,6 +133,8 @@ Create Table Team (
 	FOREIGN KEY (OfferingStaffID) REFERENCES OfferingStaff(OfferingStaffID)
 );
 
+
+
 Create Table TeamProjects(
 	TeamProjectID					int				auto_increment,
 	TeamID							int				not null,
@@ -182,7 +186,10 @@ Create Table SupervisorMeeting (
     Agender							text,
     StartTime						datetime		Not null,				
     EndTime							datetime,
-    Location						text			Not null,
+    Display_Time					bool			default false, -- can students see the location?
+    Location						text,
+    Display_Loc						bool			default false, -- can students see the location?
+	Meeting_Minutes					text,
     Comments						text,
     Approval						bool			default false,
     Primary Key (MeetingID),
@@ -252,9 +259,9 @@ INSERT INTO tcabs.TeachingPeriod VALUES ("Summer", "2018", STR_TO_DATE("2019-5-3
 
 INSERT INTO tcabs.UserCat VALUES ("dtargaryen@gmail.com", "admin");
 INSERT INTO tcabs.UserCat VALUES ("dtargaryen@gmail.com", "convenor");
-INSERT INTO tcabs.UserCat VALUES ("jsnow@gmail.com", "student");
-INSERT INTO tcabs.UserCat VALUES ("astark@gmail.com", "student");
-INSERT INTO tcabs.UserCat VALUES ("astark1@gmail.com", "student");
+INSERT INTO tcabs.UserCat VALUES ("jsnow@gmail.com", "admin");
+INSERT INTO tcabs.UserCat VALUES ("astark@gmail.com", "admin");
+INSERT INTO tcabs.UserCat VALUES ("astark1@gmail.com", "admin");
 
 INSERT INTO tcabs.UnitOffering VALUES (1, "ICT30001", "dtargaryen@gmail.com", "Semester 2", "2018", "2018-06-05");
 
@@ -763,21 +770,6 @@ create Procedure TCABSENROLMENTGetEnrolKey(in EnroledUser varchar(255),in Select
          end if;
 	END //
  DELIMITER ;
- 
-
-DELIMITER //
-CREATE PROCEDURE TCABS_enrolment_add(in NewEnrolUser varchar(255),in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
-	BEGIN
-		-- I keep getting error -subquery returns more than one row
-		DECLARE EXIT HANDLER FOR 45000 ROLLBACK;
-
-		START TRANSACTION;
-			CALL TCABSENROLMENTAddNewEnrolment(NewEnrolUser, SelectedUnitCode, SelectedOfferingTerm, SelectedOfferingyear);
-		COMMIT;
-	END// 
-DELIMITER ;
-
-/*
  -- Create Enrolment 
  -- creates a new Enrolment record using User Email, Unit code, offering term, offering year. returns an error is a filled offering census date is passed by system clock
  call TCABSENROLMENTAddNewEnrolment("Example@hotmail.com","ICT30002", "Semester 1", "2019");
@@ -995,7 +987,7 @@ DELIMITER ;
 call TCABSUNITAddnewunit("ICT30004","database");
 call TCABS_UnitOff_add("ICT30004","dtargaryen@gmail.com","semester 1","2019",STR_TO_DATE("2019-5-20", '%Y-%m-%d'));
  
- /*
+ 
              DELIMITER //
 create Procedure TCABSTeamAddTeam(in NewTeamName varchar(255), in UserEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
 	BEGIN
@@ -1203,6 +1195,7 @@ create Procedure TCABSPROJECTROLESetRoleDescription(in EnteredRoleName varchar(2
  -- Project Roles
  -- adds a project role with an associated salary per hour
  call TCABSProjectRoleAddProjectRole("Project Manager", 56.60);
+  call TCABSProjectRoleAddProjectRole("Developer", 30);
  -- sets Project role description
  call TCABSPROJECTROLESetRoleDescription("Project Manager", "Charged with managing high level group tasks and organisation");
 
@@ -1322,6 +1315,7 @@ call TCABSTEAMPROJECTAddTeamProject("Big Test Project","besttestTeam", "dtargary
 call TCABSTEAMPROJECTGetTeamProjectID("Big Test Project","testTeam2", "dtargaryen@gmail.com","ICT30002", "Semester 1", "2019",@ValueTeamProjectID);
 -- sets a budget of X for the project Y to the team called Z which has the supervisor with the email A. The team is in the subject B for the period of C for the year of D
 call TCABSTEAMPROJECTSetProjectBudget(36000,"Big Test Project","testTeam2", "dtargaryen@gmail.com","ICT30002", "Semester 1", "2019");
+call TCABSTEAMPROJECTSetProjectBudget(10,"Big Test Project","besttestTeam", "dtargaryen@gmail.com","ICT30002", "Semester 1", "2019");
 
 
                 DELIMITER //
@@ -1355,11 +1349,14 @@ create Procedure TCABSTASKAddNewTask(in StudentEmail varchar(255),in ProjectName
 	END //
  DELIMITER ;
  
+
+ 
  -- Tasks
  -- for the student user X works on the group project Y for the team called Z that has the supervisor of A which watched over this team for the subject B that is offered in period C within the Year D. The user X has submitted a task for E minutes of work that has the description of F and the Role type of G
 call TCABSTASKAddNewTask("Example@hotmail.com","Big Test Project","testTeam2","dtargaryen@gmail.com","ICT30002", "Semester 1", "2019",7,"Assigning team tasks","Project Manager");
 call TCABSTASKAddNewTask("Example@hotmail.com","Big Test Project","testTeam2","dtargaryen@gmail.com","ICT30002", "Semester 1", "2019",9,"Assigning team tasks","Project Manager");
 call TCABSTASKAddNewTask("bestExample@hotmail.com","Big Test Project","besttestTeam","dtargaryen@gmail.com","ICT30002", "Semester 1", "2019",20,"Assigning team tasks","Project Manager");
+call TCABSTASKAddNewTask("bestExample@hotmail.com","Big Test Project","besttestTeam","dtargaryen@gmail.com","ICT30002", "Semester 1", "2019",20,"Assigning team tasks","Developer");
 -- think up a method for logging changes
 
                 DELIMITER //
@@ -1400,11 +1397,7 @@ END //
                DELIMITER //
 create Procedure TCABSSUPERVISORMEETINGCheckForConflicts(in EnteredStartTime datetime, in EnteredEndTime datetime,in SupervisorEmail varchar(255))
 	BEGIN
-        if ((SELECT count(*)
-			FROM information_schema.TABLES
-			WHERE (TABLE_SCHEMA = 'tcabs') AND (TABLE_NAME = 'Supervisoroffers')) >= 1) then 
-			drop temporary table Supervisoroffers;
-        end if;
+        DROP TABLE IF EXISTS `Supervisoroffers`;
         create temporary table Supervisoroffers
         select * from SupervisorMeeting natural join team; 
         if ((select count(*) from Supervisoroffers natural join offeringstaff where 
@@ -1587,7 +1580,217 @@ END //
   call SPAINSTENCEAddInstence("AssessMe",'2019-07-14',"ICT30002", "Semester 1", "2019");
   -- This should only be used in procedurers
   call SPAINSTENCEGetInstenceKey("AssessMe",'2019-07-14',"ICT30002", "Semester 1", "2019",@valueSPAInstenceKey);
-*/
+
+                      DELIMITER //
+create Procedure GenerateAccrualTasks()
+	BEGIN
+		 
+        DROP TABLE IF EXISTS `ProjectCosts`;
+        create temporary table ProjectCosts
+        -- add entry verification
+        select TeamProjectID,sum(TimeTaken) as Total_Time_Spent, sum(TimeTaken * Salary/60) as Pay from task natural join ProjectRole where logged = true group by task.TeamProjectID, Rolename;
+END //
+ DELIMITER ;
+
+
+
+DELIMITER //
+create Procedure REPORTUnitOfferingGenerateBudget(in Unitcode varchar(255),in PeriodName Varchar(255),in periodyear varchar(255))
+	BEGIN
+		 call TCABSUNITOFFERINGGetKey(Unitcode, PeriodName, periodyear, @ValuesunitOfferingID);
+         call GenerateAccrualTasks();
+		 select TeamName,ProjectName,Budget,Round(Total_Pay,2) as Expense_To_Date,Budget - Round(Total_Pay,2) as Remaining_Budget from team natural join teamProjects t1 inner join (select TeamProjectID, sum(Pay) as Total_Pay from ProjectCosts group by TeamProjectID) t2 on t1.TeamProjectID = t2.TeamProjectID natural join offeringStaff where UnitOfferingID = @ValuesunitOfferingID;
+END //
+ DELIMITER ;
+ 
+DELIMITER //
+create Procedure REPORTUnitOfferingOverVeiw(in Unitcode varchar(255),in PeriodName Varchar(255),in periodyear varchar(255))
+	BEGIN
+		 call TCABSUNITOFFERINGGetKey(Unitcode, PeriodName, periodyear, @ValuesunitOfferingID);
+         call GenerateAccrualTasks();
+		select TeamName,Total_Time_Spent,Budget - Round(Total_Pay,2) as Remaining_Budget, Last_Meeting_Date as Last_Meeting from team natural join teamProjects t1 inner join (select team.teamID,max(SupervisorMeeting.StartTime) as Last_Meeting_Date from team natural join SupervisorMeeting group by team.teamid)t3 on t1.TeamID = t3.TeamID inner join (select TeamProjectID,sum(Total_Time_Spent) as Total_Time_Spent, sum(Pay) as Total_Pay from ProjectCosts group by TeamProjectID) t2 on t1.TeamProjectID = t2.TeamProjectID natural join offeringStaff where UnitOfferingID = @ValuesunitOfferingID;
+END //
+ DELIMITER ;
+-- report 7
+-- call REPORTUnitOfferingGenerateBudget("ICT30002", "Semester 1", "2019");
+-- report 9
+-- call REPORTUnitOfferingOverVeiw("ICT30002", "Semester 1", "2019");
+
+
+   DELIMITER //
+create Procedure TCABSTASKSGetTaskID(in EnteredTaskID int, in EnteredProjectName varchar(255),in TeamName varchar(255), in ConvenorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255),out ValuetaskID int, out ValueTeamProjectID int)
+	BEGIN
+       if (char_length(EnteredTaskID) < 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no TaskID entered";
+        end if;
+        call TCABSTEAMPROJECTGetTeamProjectID(EnteredProjectName,TeamName,ConvenorEmail,SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear,@ValueTeamProjectID);
+
+        if ((select count(*) from task where Projecttaskid = EnteredTaskID and TeamProjectID = @ValueTeamProjectID) != 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Entered combination of task and team Project doesn't exist";
+		end if;
+        set ValuetaskID = EnteredTaskID;
+        set ValueTeamProjectID = @ValueTeamProjectID;
+        
+	END //
+ DELIMITER ;
+ 
+    DELIMITER //
+create Procedure TCABSTASKSRegistorTask(in EnteredTaskID int, in EnteredProjectName varchar(255),in TeamName varchar(255), in SupervisorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
+	BEGIN
+       call TCABSTASKSGetTaskID(EnteredTaskID,EnteredProjectName,TeamName,SupervisorEmail,SelectedUnitCode,SelectedOfferingterm,SelectedOfferingyear,@ValuetaskID,@ValueTeamProjectID);
+       update Task set logged = true where ProjectTaskid = @ValuetaskID and TeamProjectID = @ValueTeamProjectID;
+        
+	END //
+ DELIMITER ; 
+ 
+     DELIMITER //
+create Procedure TCABSTASKSModifyTask(in EnteredTaskID int, in EnteredProjectName varchar(255),in TeamName varchar(255), in SupervisorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255), in NewTimeTaken int, in TaskRole varchar(255))
+	BEGIN
+    if (char_length(TaskRole) < 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no Role entered";
+	end if;
+    if (NewTimeTaken < 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Task must be one or more minutes long ";
+	end if;
+    if ((select count(*) from ProjectRole where Rolename = TaskRole) <> 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Entered project role doesn't exist";
+	end if;
+    
+       call TCABSTASKSGetTaskID(EnteredTaskID,EnteredProjectName,TeamName,SupervisorEmail,SelectedUnitCode,SelectedOfferingterm,SelectedOfferingyear,@ValuetaskID,@ValueTeamProjectID);
+       update Task set Altered = true,TimeTaken = NewTimeTaken,Rolename = TaskRole where ProjectTaskid = @ValuetaskID and TeamProjectID = @ValueTeamProjectID;
+        
+	END //
+ DELIMITER ; 
+ 
+call TCABSTASKSGetTaskID(1,"Big Test Project","testTeam2", "dtargaryen@gmail.com","ICT30002", "Semester 1", "2019",@ValuetaskID,@ValueTeamProjectID);
+-- marks the task as logged 
+call TCABSTASKSRegistorTask(1,"Big Test Project","testTeam2", "dtargaryen@gmail.com","ICT30002", "Semester 1", "2019");
+-- changes the time and role of a selected task
+call TCABSTASKSModifyTask(1,"Big Test Project","testTeam2", "dtargaryen@gmail.com","ICT30002", "Semester 1", "2019",30,"Developer");
+
+     DELIMITER //
+create Procedure TCABSMEETINGSetAgender(EnteredStartTime datetime, in Teamname varchar(255), in SupervisorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255),NewAgender text)
+	BEGIN
+    if (char_length(NewAgender) < 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no Agender entered";
+	end if;
+    call TCABSSUPERVISORMEETINGGetMeetingKey(EnteredStartTime,Teamname, SupervisorEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear,@ValueSuppervisorMeetingKey);
+	update Supervisormeeting set Agender = NewAgender where Meetingid = @ValueSuppervisorMeetingKey;      
+	END //
+ DELIMITER ; 
+ 
+      DELIMITER //
+create Procedure TCABSMEETINGSetComments(EnteredStartTime datetime, in Teamname varchar(255), in SupervisorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255),NewComments text)
+	BEGIN
+    if (char_length(NewComments) < 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no Comments entered";
+	end if;
+    call TCABSSUPERVISORMEETINGGetMeetingKey(EnteredStartTime,Teamname, SupervisorEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear,@ValueSuppervisorMeetingKey);
+	update Supervisormeeting set Comments = NewComments where Meetingid = @ValueSuppervisorMeetingKey;      
+	END //
+ DELIMITER ; 
+ 
+       DELIMITER //
+create Procedure TCABSMEETINGSetMeetingMinutes(EnteredStartTime datetime, in Teamname varchar(255), in SupervisorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255),MeetingMinutes text)
+	BEGIN
+    if (char_length(MeetingMinutes) < 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "nothing was entered for Meeting Minutes";
+	end if;
+    call TCABSSUPERVISORMEETINGGetMeetingKey(EnteredStartTime,Teamname, SupervisorEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear,@ValueSuppervisorMeetingKey);
+	update Supervisormeeting set Meeting_Minutes = MeetingMinutes where Meetingid = @ValueSuppervisorMeetingKey;      
+	END //
+ DELIMITER ; 
+ 
+        DELIMITER //
+create Procedure TCABSMEETINGSetLocation(EnteredStartTime datetime, in Teamname varchar(255), in SupervisorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255),NewLocation varchar(255))
+	BEGIN
+    call TCABSSUPERVISORMEETINGGetMeetingKey(EnteredStartTime,Teamname, SupervisorEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear,@ValueSuppervisorMeetingKey);
+	update Supervisormeeting set Location = NewLocation where Meetingid = @ValueSuppervisorMeetingKey;      
+	END //
+ DELIMITER ; 
+ 
+         DELIMITER //
+create Procedure TCABSMEETINGChangeTimeDisplay(EnteredStartTime datetime, in Teamname varchar(255), in SupervisorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
+	BEGIN
+    call TCABSSUPERVISORMEETINGGetMeetingKey(EnteredStartTime,Teamname, SupervisorEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear,@ValueSuppervisorMeetingKey);
+	update Supervisormeeting set Display_Time = not Display_Time where Meetingid = @ValueSuppervisorMeetingKey;    
+    
+	END //
+ DELIMITER ; 
+ 
+          DELIMITER //
+create Procedure TCABSMEETINGChangeLocationDisplay(EnteredStartTime datetime, in Teamname varchar(255), in SupervisorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
+	BEGIN
+    call TCABSSUPERVISORMEETINGGetMeetingKey(EnteredStartTime,Teamname, SupervisorEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear,@ValueSuppervisorMeetingKey);
+	update Supervisormeeting set Display_Loc = not Display_Loc where Meetingid = @ValueSuppervisorMeetingKey;    
+    
+	END //
+ DELIMITER ; 
+ 
+           DELIMITER //
+create Procedure TCABSMEETINGChangeBothDisplay(EnteredStartTime datetime, in Teamname varchar(255), in SupervisorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
+	BEGIN
+    call TCABSMEETINGChangeLocationDisplay(EnteredStartTime,Teamname, SupervisorEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear);
+    call TCABSMEETINGChangeTimeDisplay(EnteredStartTime,Teamname, SupervisorEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear);
+	END //
+ DELIMITER ; 
+ 
+           DELIMITER //
+create Procedure TCABSMEETINGChangeApproval(EnteredStartTime datetime, in Teamname varchar(255), in SupervisorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
+	BEGIN
+    call TCABSSUPERVISORMEETINGGetMeetingKey(EnteredStartTime,Teamname, SupervisorEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear,@ValueSuppervisorMeetingKey);
+	update Supervisormeeting set Approval = not Approval where Meetingid = @ValueSuppervisorMeetingKey;    
+    
+	END //
+ DELIMITER ; 
+ 
+            DELIMITER //
+create Procedure TCABSMEETINGChangeTime(EnteredOriginalStartTime datetime, in Teamname varchar(255), in SupervisorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255), in newStartTime datetime, in newEndTime datetime)
+	BEGIN
+    declare TimerestictStart,TimerestictEnd dateTime;
+    
+    call TCABSSUPERVISORMEETINGGetMeetingKey(EnteredOriginalStartTime,Teamname, SupervisorEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear,@ValueSuppervisorMeetingKey);
+	if ((select count(*) from MeetingAttendees where MeetingID = @ValueSuppervisorMeetingKey) >= 1) then
+		SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "This Meeting has already occured";
+    end if;
+    select StartDate,Enddate into TimerestictStart,TimerestictEnd from TeachingPeriod where Term = SelectedOfferingterm and Year = SelectedOfferingyear;
+        
+        if (TimerestictStart >= newStartTime) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Cannot schedual a time before subject period has started";
+        end if;
+        if (TimerestictEnd <= newEndTime) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Cannot schedual a time after subject period has ended";
+        end if;
+        
+        call TCABSSUPERVISORMEETINGCheckForConflicts(newStartTime,newEndTime,SupervisorEmail);
+        
+        update Supervisormeeting set StartTime = newStartTime, EndTime = newEndTime where MeetingID = @ValueSuppervisorMeetingKey;
+    
+	END //
+ DELIMITER ; 
+ 
+-- changes both Display_Time and Loc_Display to their oposite state (eg. true to false) for students to veiw details (both start as false)
+call TCABSMEETINGChangeBothDisplay('2019-07-14 23:40:00',"testTeam2","dtargaryen@gmail.com","ICT30002", "Semester 1", "2019");
+-- TCABSMEETINGChangeLocationDisplay changes Loc_Display to opposite of current state
+call TCABSMEETINGChangeLocationDisplay('2019-07-14 23:40:00',"testTeam2","dtargaryen@gmail.com","ICT30002", "Semester 1", "2019");
+-- TCABSMEETINGChangeTimeDisplay changes Time_Display to opposite of current state
+call TCABSMEETINGChangeTimeDisplay('2019-07-14 23:40:00',"testTeam2","dtargaryen@gmail.com","ICT30002", "Semester 1", "2019");
+-- switches registored approval of students meeting minutes from supervisor
+call TCABSMEETINGChangeApproval('2019-07-14 23:40:00',"testTeam2","dtargaryen@gmail.com","ICT30002", "Semester 1", "2019");
+-- student enters plan for meeting
+call TCABSMEETINGSetAgender('2019-07-14 23:40:00',"testTeam2","dtargaryen@gmail.com","ICT30002", "Semester 1", "2019","reveiw over progress");
+-- student enters record of what decsions came out of the meeting 
+call TCABSMEETINGSetMeetingMinutes('2019-07-14 23:40:00',"testTeam2","dtargaryen@gmail.com","ICT30002", "Semester 1", "2019","There is plentty more to do!");
+-- supervisor enters record of what decsions came out of the meeting (no other user should be able to see this)
+call TCABSMEETINGSetComments('2019-07-14 23:40:00',"testTeam2","dtargaryen@gmail.com","ICT30002", "Semester 1", "2019","This Team Deserves a HD!");
+-- changes the location set for this meeting
+call TCABSMEETINGSetLocation('2019-07-14 23:40:00',"testTeam2","dtargaryen@gmail.com","ICT30002", "Semester 1", "2019","My Office");
+-- changes the meeting time (given the supervisor isn't booked)
+call TCABSMEETINGChangeTime('2019-07-15 00:01:00',"testTeam2","dtargaryen@gmail.com","ICT30002", "Semester 1", "2019",'2019-07-16 23:40:00', '2019-07-16 23:40:05');
+
+select * from Supervisormeeting;
+-- call TCABSSUPERVISORMEETINGGetMeetingKey('2019-07-14 23:40:00',"testTeam2","dtargaryen@gmail.com","ICT30002", "Semester 1", "2019",@ValueSuppervisorMeetingKey);
+-- in EnteredStartTime datetime, in Teamname varchar(255), in SupervisorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255), out ValueSuppervisorMeetingKey int
 
 -- ---------------------------------------No Procedures or Functions after this point -----------------------------------------------
 -- Functions
