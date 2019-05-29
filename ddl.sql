@@ -770,6 +770,19 @@ create Procedure TCABSENROLMENTGetEnrolKey(in EnroledUser varchar(255),in Select
          end if;
 	END //
  DELIMITER ;
+
+DELIMITER //	
+CREATE PROCEDURE TCABS_enrolment_add(in NewEnrolUser varchar(255),in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))	
+	BEGIN	
+		-- I keep getting error -subquery returns more than one row	
+		DECLARE EXIT HANDLER FOR 45000 ROLLBACK;	
+
+ 		START TRANSACTION;	
+			CALL TCABSENROLMENTAddNewEnrolment(NewEnrolUser, SelectedUnitCode, SelectedOfferingTerm, SelectedOfferingyear);	
+		COMMIT;	
+	END// 	
+DELIMITER ;
+
  -- Create Enrolment 
  -- creates a new Enrolment record using User Email, Unit code, offering term, offering year. returns an error is a filled offering census date is passed by system clock
  call TCABSENROLMENTAddNewEnrolment("Example@hotmail.com","ICT30002", "Semester 1", "2019");
