@@ -13,10 +13,12 @@
 	//$teamObj = new TeamMember;
 	//print_r($teamObj->searchMembers("%a%"));
 	
-	//$teamObj = new Team;
+	$teamObj = new Team;
 	//print_r($teamObj->getTeam(1)); //works
 	//print_r($teamObj->searchTeam("%j%")); //works
 	//$teamObj->addTeam("just a name", "dtargaryen@gmail.com", "ICT30004", "Semester 1", "2019"); //works
+	//$teamObj->updateTeam("just a name", "dtargaryen@gmail.com", "ICT30001", "Semester 2", "2018", "dtargaryen@gmail.com", "just a name updated 2", "astark@gmail.com"); //works
+	$teamObj->deleteTeam("just a name", "dtargaryen@gmail.com", "ICT30001", "Semester 2", "2018"); //works
 
 	$projObj = new Project;
 	$projObj->addProject("Test team name", "asdkfjskdfsadfkjdsjhfjsdhflusadhfjahsdjfhsdajfhsaddjhfakjds"); //works

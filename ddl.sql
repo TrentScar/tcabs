@@ -1061,7 +1061,7 @@ create Procedure TCABSTeamGetTeamKey(in EnteredTeamname varchar(255), in UserEma
         end if;
         
         call TCABSOFFERINGSTAFFGetOfferingStaffKey(UserEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear,@ValueOfferingStaff);
-        select TeamID into ValuesTeamID from team where OfferingStaffID = @ValueOfferingStaff and TeamName = EnteredTeamname;
+        select TeamID into ValuesTeamID from Team where OfferingStaffID = @ValueOfferingStaff and TeamName = EnteredTeamname;
         
         if (ValuesTeamID is null) then
 			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Unknown team name and Staff offering combination ";
@@ -1435,7 +1435,7 @@ create Procedure TCABSSUPERVISORMEETINGCheckForConflicts(in EnteredStartTime dat
 	BEGIN
         DROP TABLE IF EXISTS `Supervisoroffers`;
         create temporary table Supervisoroffers
-        select * from SupervisorMeeting natural join team; 
+        select * from SupervisorMeeting natural join Team; 
         if ((select count(*) from Supervisoroffers natural join offeringstaff where 
         username = SupervisorEmail and ((StartTime <= EnteredStartTime and EnteredStartTime <= EndTime) 
         or (EndTime >= EnteredEndTime and EnteredEndTime >= StartTime))) >= 1) then
@@ -1645,7 +1645,7 @@ create Procedure REPORTUnitOfferingGenerateBudget(in Unitcode varchar(255),in Pe
 	BEGIN
 		 call TCABSUNITOFFERINGGetKey(Unitcode, PeriodName, periodyear, @ValuesunitOfferingID);
          call GenerateAccrualTasks();
-		 select TeamName,ProjectName,Budget,Round(Total_Pay,2) as Expense_To_Date,Budget - Round(Total_Pay,2) as Remaining_Budget from team natural join teamProjects t1 inner join (select TeamProjectID, sum(Pay) as Total_Pay from ProjectCosts group by TeamProjectID) t2 on t1.TeamProjectID = t2.TeamProjectID natural join offeringStaff where UnitOfferingID = @ValuesunitOfferingID;
+		 select TeamName,ProjectName,Budget,Round(Total_Pay,2) as Expense_To_Date,Budget - Round(Total_Pay,2) as Remaining_Budget from Team natural join teamProjects t1 inner join (select TeamProjectID, sum(Pay) as Total_Pay from ProjectCosts group by TeamProjectID) t2 on t1.TeamProjectID = t2.TeamProjectID natural join offeringStaff where UnitOfferingID = @ValuesunitOfferingID;
 END //
  DELIMITER ;
  
@@ -1654,7 +1654,7 @@ create Procedure REPORTUnitOfferingOverVeiw(in Unitcode varchar(255),in PeriodNa
 	BEGIN
 		 call TCABSUNITOFFERINGGetKey(Unitcode, PeriodName, periodyear, @ValuesunitOfferingID);
          call GenerateAccrualTasks();
-		select TeamName,Total_Time_Spent,Budget - Round(Total_Pay,2) as Remaining_Budget, Last_Meeting_Date as Last_Meeting from team natural join teamProjects t1 inner join (select team.teamID,max(SupervisorMeeting.StartTime) as Last_Meeting_Date from team natural join SupervisorMeeting group by team.teamid)t3 on t1.TeamID = t3.TeamID inner join (select TeamProjectID,sum(Total_Time_Spent) as Total_Time_Spent, sum(Pay) as Total_Pay from ProjectCosts group by TeamProjectID) t2 on t1.TeamProjectID = t2.TeamProjectID natural join offeringStaff where UnitOfferingID = @ValuesunitOfferingID;
+		select TeamName,Total_Time_Spent,Budget - Round(Total_Pay,2) as Remaining_Budget, Last_Meeting_Date as Last_Meeting from Team natural join teamProjects t1 inner join (select Team.teamID,max(SupervisorMeeting.StartTime) as Last_Meeting_Date from Team natural join SupervisorMeeting group by Team.teamid)t3 on t1.TeamID = t3.TeamID inner join (select TeamProjectID,sum(Total_Time_Spent) as Total_Time_Spent, sum(Pay) as Total_Pay from ProjectCosts group by TeamProjectID) t2 on t1.TeamProjectID = t2.TeamProjectID natural join offeringStaff where UnitOfferingID = @ValuesunitOfferingID;
 END //
  DELIMITER ;
 -- report 7
@@ -1848,16 +1848,19 @@ create Procedure TCABSUpdateTeamSupervisor(in EnteredTeamname varchar(255), in U
 
         call TCABSTeamGetTeamKey(EnteredTeamname, UserEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @ValuesTeamID);
         call TCABSOFFERINGSTAFFGetOfferingStaffKey(NewSupervisorsEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear,@ValueOfferingStaff);
-        update team set offeringstaffid = @ValueOfferingStaff where teamid = @ValuesTeamID;
+        update Team set offeringstaffid = @ValueOfferingStaff where teamid = @ValuesTeamID;
 END//
  DELIMITER ;
 
 DELIMITER //
  Create Procedure TCABSUpdateFullTeam(in EnteredTeamname varchar(255), in UserEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255), in NewSupervisorsEmail varchar(255),in newteamname varchar(255),in ProjectManagerUser varchar(255))
  begin
+		DECLARE EXIT HANDLER FOR 45000 ROLLBACK;
+		START TRANSACTION;
         call TCABSUpdateTeamSupervisor(EnteredTeamname, UserEmail, SelectedUnitCode,SelectedOfferingterm, SelectedOfferingyear, NewSupervisorsEmail);
         call TCABSTeamSetTeamName(EnteredTeamname, UserEmail, SelectedUnitCode,SelectedOfferingterm, SelectedOfferingyear, newteamname);
         call TCABSTeamSetTeamProjectManager(EnteredTeamname, UserEmail, SelectedUnitCode,SelectedOfferingterm, SelectedOfferingyear, ProjectManagerUser);
+		COMMIT;
  end //
  DELIMITER ;
 
@@ -2340,7 +2343,7 @@ create or replace Procedure TCABSTEACHINGPERIODDeletePeriod(in EnteredTerm varch
 			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no Teaching Period with the entered Teaching Period";
 		end if;
 	END //
- DELIMITER;
+ DELIMITER ;
 
 -- ---------------------------------------No Procedures or Functions after this point -----------------------------------------------
 -- Functions

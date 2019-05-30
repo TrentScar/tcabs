@@ -822,10 +822,10 @@
 			return $teams;
 		}
 
-		public function updateTeam($tname, $supemail, $unitcode, $term, $year) {
+		public function updateTeam($tname, $supemail, $unitcode, $term, $year, $nSupEmail, $nTeamName, $projManager) {
 		
-			$stmt = $GLOBALS['conn']->prepare("CALL TCABSUpdateFullTeam(?, ?, ?, ?)");
-			$stmt->bind_param("sssss", $tname, $supemail, $unitcode, $term, $year);
+			$stmt = $GLOBALS['conn']->prepare("CALL TCABSUpdateFullTeam(?, ?, ?, ?, ?, ?, ?, ?)");
+			$stmt->bind_param("ssssssss", $tname, $supemail, $unitcode, $term, $year, $nSupEmail, $nTeamName, $projManager);
 			
 			try {
 				$stmt->execute();
@@ -837,7 +837,7 @@
 
 		public function deleteTeam($tname, $supemail, $unitcode, $term, $year) {
 		
-			$stmt = $GLOBALS['conn']->prepare("CALL TCABSTeamDeleteTeam(?, ?, ?, ?)");
+			$stmt = $GLOBALS['conn']->prepare("CALL TCABSTeamDeleteTeam(?, ?, ?, ?, ?)");
 			$stmt->bind_param("sssss", $tname, $supemail, $unitcode, $term, $year);
 			
 			try {
