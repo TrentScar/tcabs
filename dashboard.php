@@ -13,8 +13,13 @@
 	//$teamObj = new TeamMember;
 	//print_r($teamObj->searchMembers("%a%"));
 	
-	//$teamObj = new TeamMember;
-	//print_r($teamObj->getMembers(1));
+	//$teamObj = new Team;
+	//print_r($teamObj->getTeam(1)); //works
+	//print_r($teamObj->searchTeam("%j%")); //works
+	//$teamObj->addTeam("just a name", "dtargaryen@gmail.com", "ICT30004", "Semester 1", "2019"); //works
+
+	$projObj = new Project;
+	$projObj->addProject("Test team name", "asdkfjskdfsadfkjdsjhfjsdhflusadhfjahsdjfhsdajfhsaddjhfakjds"); //works
 
 	// subquery returns more than one row(error)
 	//$uOffObj = new UnitOffering("STA10003");

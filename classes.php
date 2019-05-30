@@ -75,13 +75,6 @@
 
 		public function assignRoles($userEmail, $userRoleArr) {
 			// how to roll back if error occurs for some role
-			
-			// delete current roles
-			$stmt = $GLOBALS['conn']->prepare("delete from UserCat where email = ?");
-			$stmt->bind_param('s', $userEmail);
-			$stmt->execute();
-			
-			
 			$stmt = $GLOBALS['conn']->prepare("call TCABSUserCatAssignUserARole(?, ?)");
 
 			foreach($userRoleArr as $userRole => $value) {
@@ -315,38 +308,6 @@
 
 			$stmt->close();
 		}
-		
-// to edit a user updating Users and UserCat tables
-		public function updateUser($fName, $lName, $gender, $pNum, $email, $roles) {
-
-			// convert pNum to ###-###-####
-			// will only work on 10-digit number without country code
-			$pNum = sprintf("%s-%s-%s", substr($pNum, 0, 3), substr($pNum, 3, 3), substr($pNum, 6, 4));
-
-			// encrypt password
-
-			$stmt = $GLOBALS['conn']->prepare("call TCABS_User_Update(?, ?, ?, ?, ?)");
-			$stmt->bind_param('sssss', $fName, $lName, $gender, $pNum, $email);
-
-			try {
-				$GLOBALS['conn']->begin_transaction();
-
-				$stmt->execute();
-
-				// to update userCat table
-				$roleObj = new Role;
-				$roleObj->assignRoles($email, $roles);
-
-				$GLOBALS['conn']->commit();
-
-			} catch(mysqli_sql_exception $e) {
-				$GLOBALS['conn']->rollback();
-				throw $e;
-			}
-
-			$stmt->close();
-		}
-		
 	}
 
 	class Unit {
@@ -749,22 +710,17 @@
 			return $members;
 		}
 
-		public function updateMember($tMemberID) {
-//
-			$stmt = $GLOBALS['conn']->prepare("UPDATE Unit 
-								SET unitCode = ?, unitName = ?, faculty = ?
-								WHERE unitCode = ?");
-
-			$stmt->bind_param("ssss", $unit->unitCode, $unit->unitName, $unit->unitFaculty, $unit->unitCode);
-
+		public function addTeamMember($sEmail, $tName, $supEmail, $unitCode, $term, $year) {
+		
+			$stmt = $GLOBALS['conn']->prepare("CALL TCABSTEAMMEMBERAddTeamMember(?, ?, ?, ?, ?, ?)");
+			$stmt->bind_param("ssssss", $sEmail, $tName, $supEmail, $unitCode, $term, $year);
+			
 			try {
 				$stmt->execute();
 			} catch(mysqli_sql_exception $e) {
 				throw $e;
 			}
-
 			$stmt->close();
-			
 		}
 	}
 
@@ -774,8 +730,161 @@
 		public $offStaffID;
 		public $projManager;
 
-		public function getTeam() {
+		public function getTeam($pTeamID) {
 			
+			$stmt = $GLOBALS['conn']->prepare("SELECT TeamID, TeamName, OfferingStaffID, ProjectManager 
+								FROM Team 
+								WHERE TeamID = ?");
+			$stmt->bind_param('s', $pTeamID);
+
+			$tObj = new Team;
+
+			try {
+				$stmt->execute();
+				$stmt->store_result();
+				$stmt->bind_result($teamID, $teamName, $offStaffID, $projManager);
+
+				if($stmt->num_rows > 0) {
+					while($stmt->fetch()) {
+
+						$tObj->teamID = $teamID;
+						$tObj->teamName = $teamName;
+						$tObj->offStaffID = $offStaffID;
+						$tObj->projManager = $projManager;
+
+					}
+				} else throw new Exception("No Team found for Team ID : {$pteamID}");
+				$stmt->close();
+			} catch(mysqli_sql_exception $e) {
+				throw $e;
+			}
+			return $tObj;
+		}
+
+		public function addTeam($tname, $supemail, $unitcode, $term, $year) {
+		
+			$stmt = $GLOBALS['conn']->prepare("CALL TCABSTeamAddTeam(?, ?, ?, ?, ?)");
+			$stmt->bind_param("sssss", $tname, $supemail, $unitcode, $term, $year);
+			
+			try {
+				$stmt->execute();
+			} catch(mysqli_sql_exception $e) {
+				throw $e;
+			}
+			$stmt->close();
+		}
+
+
+		public function searchTeam($searchQuery) {
+			
+			$searchResult = array();
+
+			$stmt = $GLOBALS['conn']->prepare("SELECT T.TeamID, T.TeamName, 
+								T.OfferingStaffID, OF.UserName,T.projectManager, 
+								OF.UnitOfferingID, UO.unitCode, UO.term, UO.year
+								FROM Team T INNER JOIN OfferingStaff OF ON T.OfferingStaffID = OF.OfferingStaffID
+								INNER JOIN UnitOffering UO ON UO.unitOfferingID = OF.UnitOfferingID
+								WHERE T.TeamID LIKE ? or T.TeamName LIKE ?"
+								);
+			$stmt->bind_param('ss', $searchQuery, $searchQuery);
+
+			$teams = [];
+
+			try {
+				$stmt->execute();
+				$stmt->store_result();
+				$stmt->bind_result($teamID, $teamName, $offeringStaffID, $uName, 
+								$projManager, $uOffID, $unitCode, $term, $year);
+
+				$i = 0;
+				if($stmt->num_rows > 0) {
+					while($stmt->fetch()) {
+
+						$teams[$i] = (array)[
+							"teamID" => $teamID,
+							"teamName" => $teamName,
+							"offeringStaffID" => $offeringStaffID,
+							"uName" => $uName,
+							"projManager" => $projManager,
+							"uOffID" => $uOffID,
+							"unitCode" => $unitCode,
+							"term" => $term,
+							"year" => $year
+						];
+
+						$i = $i +1;
+					}
+				}
+				$stmt->close();
+			} catch(mysqli_sql_exception $e) {
+				throw $e;
+			}
+			return $teams;
+		}
+	}
+
+	class Project {
+	 public $projName;
+	 public $projDesc;
+
+	 public function addProject($projName, $projDesc) {
+	 
+			$stmt = $GLOBALS['conn']->prepare("CALL TCABS_project_add(?, ?)");
+			$stmt->bind_param("ss", $projName, $projDesc);
+			
+			try {
+				$stmt->execute();
+			} catch(mysqli_sql_exception $e) {
+				throw $e;
+			}
+			$stmt->close();
+	 }
+
+		public function searchProjects($searchQuery) {
+			
+			$searchResult = array();
+
+			$stmt = $GLOBALS['conn']->prepare("SELECT T.TeamID, T.TeamName, 
+								T.OfferingStaffID, OF.UserName,T.projectManager, 
+								OF.UnitOfferingID, UO.unitCode, UO.term, UO.year
+								FROM Team T INNER JOIN OfferingStaff OF ON T.OfferingStaffID = OF.OfferingStaffID
+								INNER JOIN UnitOffering UO ON UO.unitOfferingID = OF.UnitOfferingID
+								WHERE T.TeamID LIKE ? or T.TeamName LIKE ?"
+								);
+			$stmt->bind_param('ss', $searchQuery, $searchQuery);
+
+			$teams = [];
+
+			try {
+				$stmt->execute();
+				$stmt->store_result();
+				$stmt->bind_result($teamID, $teamName, $offeringStaffID, $uName, 
+								$projManager, $uOffID, $unitCode, $term, $year);
+
+				$i = 0;
+				if($stmt->num_rows > 0) {
+					while($stmt->fetch()) {
+
+						$teams[$i] = (array)[
+							"teamID" => $teamID,
+							"teamName" => $teamName,
+							"offeringStaffID" => $offeringStaffID,
+							"uName" => $uName,
+							"projManager" => $projManager,
+							"uOffID" => $uOffID,
+							"unitCode" => $unitCode,
+							"term" => $term,
+							"year" => $year
+						];
+
+						$i = $i +1;
+					}
+				}
+				$stmt->close();
+			} catch(mysqli_sql_exception $e) {
+				throw $e;
+			}
+			return $teams;
 		}
 	}
 ?>
