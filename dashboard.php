@@ -7,6 +7,9 @@
 		header("location: /tcabs/login.php");
 	}
 
+	$projObj = new Project;
+	$projObj = $projObj->getProject("Big Test Project");
+	print_r($projObj);
 	// subquery returns more than one row(error)
 	//$uOffObj = new UnitOffering("STA10003");
 	//$uOffObj->addUnitOff("ICT30001", "dtargaryen@gmail.com", "Semester 2", "2019", "2019-05-09");

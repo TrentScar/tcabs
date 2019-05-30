@@ -345,8 +345,6 @@
 
 			$stmt->close();
 		}
-		
-
 	}
 
 	class Unit {
@@ -807,9 +805,39 @@
 	}
 
 	class Project {
-	 public $projName;
-	 public $projDesc;
+		public $projName;
+		public $projDesc;
 
+		// get a single project object with use of project name
+		public function getProject($projName) {
+	 
+		$stmt = $GLOBALS['conn']->prepare("SELECT * FROM Project 
+							WHERE ProjectName = ?");
+		$stmt->bind_param('s', $projName);
+
+		$projObj = new Project;
+
+		try {
+			$stmt->execute();
+			$stmt->store_result();
+			$stmt->bind_result($projName, $projDesc);
+
+			if($stmt->num_rows > 0) {
+				while($stmt->fetch()) {
+
+					$projObj->projName = $projName;
+					$projObj->projDesc = $projDesc;
+
+				}
+			} else throw new Exception("No Project found named as '{$projName}'");
+			$stmt->close();
+		} catch(mysqli_sql_exception $e) {
+			throw $e;
+		}
+		return $projObj;
+	}
+
+	// add project to database
 	 public function addProject($projName, $projDesc) {
 	 
 			$stmt = $GLOBALS['conn']->prepare("CALL TCABS_project_add(?, ?)");
@@ -823,6 +851,7 @@
 			$stmt->close();
 	 }
 
+		// search projects return array
 		public function searchProjects($searchQuery) {
 			
 			$searchResult = array();
