@@ -12,7 +12,7 @@ if(isset($_POST['search']))
     $valueToSearch = $_POST['valueToSearch'];
     // search in all table columns
     // using concat mysql function
-    $query = "SELECT unitCode,term,year,fName,lName From unitoffering INNER JOIN offeringproject ON unitoffering.unitOfferingID = offeringproject.UnitOfferingID INNER JOIN project ON offeringproject.ProjectName = project.ProjectName INNER JOIN teamprojects ON project.ProjectName = teamprojects.ProjectName INNER JOIN team ON teamprojects.TeamID = team.TeamID INNER JOIN offeringstaff ON team.OfferingStaffID = offeringstaff.OfferingStaffID INNER JOIN users ON offeringstaff.UserName = users.email group by fName,lName WHERE CONCAT(fName`,`lName`,`term`,`year`,`unitCode`) LIKE '%".$valueToSearch."%'";
+    $query = "SELECT unitCode,term,year,fName,lName From unitoffering INNER JOIN offeringproject ON unitoffering.unitOfferingID = offeringproject.UnitOfferingID INNER JOIN project ON offeringproject.ProjectName = project.ProjectName INNER JOIN teamprojects ON project.ProjectName = teamprojects.ProjectName INNER JOIN team ON teamprojects.TeamID = team.TeamID INNER JOIN offeringstaff ON team.OfferingStaffID = offeringstaff.OfferingStaffID INNER JOIN users ON offeringstaff.UserName = users.email WHERE CONCAT(`fName`,`lName`,`term`,`year`,`unitCode`) LIKE '%".$valueToSearch."%'";
     $search_result = filterTable($query);
 
 }
@@ -39,11 +39,12 @@ function filterTable($query)
 
   <body class="loggedin">
 		<?php include "styles/stylesheet.php"; ?>
-
 			<body class="loggedin">
 				<?php include "views/header.php"; ?>
+
 			<div class="content">
-			<h2>Available reports to generate</h2><h2-date><?php echo date('d F, Y (l)'); ?></h2-date><br>
+			<h2>Generated Report</h2><h2-date><?php echo date('d F, Y (l)'); ?></h2-date><br>
+
 			<div>
 				<?php
 				//Check the Users role to see if they have access to this
@@ -51,22 +52,16 @@ function filterTable($query)
 				foreach($_SESSION['loggedUser']->uRoles as $userType => $access) {
 					if($userType=='admin') {
 						$roleFound = TRUE;
-				?>
-    <div class="btn-group btn-group-justified">
-      <a href="report.php" class="btn btn-primary">Overview</a>
-      <a href="report1.php" class="btn btn-primary">1</a>
-      <a href="report2.php" class="btn btn-primary">2</a>
-      <a href="report3.php" class="btn btn-primary">3</a>
-      <a href="report4.php" class="btn btn-primary">4</a>
-      <a href="report5.php" class="btn btn-primary">5</a>
-      <a href="report6.php" class="btn btn-primary">6</a>
-      <a href="report7.php" class="btn btn-primary">7</a>
-      <a href="report8.php" class="btn btn-primary">8</a>
-      <a href="report9.php" class="btn btn-primary">9</a>
-      <a href="report10.php" class="btn btn-primary">10</a>
-    </div>
-    <br>
-    <p class="h4 mb-4 text-center">3. List of registered supervisors</p>
+					} else if($userType=='convenor') {
+						$roleFound = TRUE;
+				} }?>
+
+
+				<?php
+				//If they have the correct role to view the page
+				if($roleFound == TRUE) { ?>
+
+    <p class="h4 mb-4 text-center">List of registered supervisors</p>
 
     <body>
         <form action="report3.php" method="post">
@@ -77,7 +72,8 @@ function filterTable($query)
                 <tr>
                   <th>Unit Code</th>
                   <th>Unit Offering Period</th>
-                  <th>Supervisor</th>
+                  <th>Supervisor Name</th>
+
                 </tr>
 
       <!-- populate table from mysql database -->
@@ -96,10 +92,11 @@ function filterTable($query)
             </div>
         </form>
     </body>
-  <?php  } }
+<?php } ?>
 
+<?php
 	//If they dont have correct permission
-	if ($roleFound == FALSE) { ?>
+if ($roleFound == FALSE) { ?>
 
 		<h2>Permission Denied</h2>
 		<div>
