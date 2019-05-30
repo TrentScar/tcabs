@@ -1855,11 +1855,492 @@ END//
 DELIMITER //
  Create Procedure TCABSUpdateFullTeam(in EnteredTeamname varchar(255), in UserEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255), in NewSupervisorsEmail varchar(255),in newteamname varchar(255),in ProjectManagerUser varchar(255))
  begin
-       -- call TCABSUpdateTeamSupervisor(EnteredTeamname, UserEmail, SelectedUnitCode,SelectedOfferingterm, SelectedOfferingyear, NewSupervisorsEmail);
+        call TCABSUpdateTeamSupervisor(EnteredTeamname, UserEmail, SelectedUnitCode,SelectedOfferingterm, SelectedOfferingyear, NewSupervisorsEmail);
         call TCABSTeamSetTeamName(EnteredTeamname, UserEmail, SelectedUnitCode,SelectedOfferingterm, SelectedOfferingyear, newteamname);
         call TCABSTeamSetTeamProjectManager(EnteredTeamname, UserEmail, SelectedUnitCode,SelectedOfferingterm, SelectedOfferingyear, ProjectManagerUser);
  end //
  DELIMITER ;
+
+ DELIMITER //
+create or replace Procedure TCABSTeamDeleteTeam(in SelectedTeamName varchar(255), in UserEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
+	BEGIN
+
+		if (char_length(UserEmail) < 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no User Email entered";
+        end if;
+        if (char_length(SelectedTeamName) < 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no team name entered";
+        end if;
+        if ((select count(*) from Users where email = UserEmail) <> 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered User Email does not exist";
+        end if;
+        if ((select count(*) from UserCat where userType = "supervisor" and email = UserEmail) <> 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "This user is not currently a supervisor of any team";
+        end if;
+        if (TCABSDateValiadationCheckUnitOfferingVsSystem(SelectedOfferingterm,SelectedOfferingyear)) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "you can not update a team to a unit which has already concluded";
+        end if;
+
+		call TCABSTeamGetTeamKey(SelectedTeamName, UserEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @ValuesTeamID);
+
+		if ((select COUNT(*) from SupervisorMeeting WHERE @ValuesTeamID = TeamID) >= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Entered Team already having a team meeting cannot be deleted.";
+		end if;
+
+		if ((select COUNT(*) from TeamProjects WHERE @ValuesTeamID = TeamID) >= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Entered Team already having a team project cannot be deleted.";
+		end if;
+
+		if (select count(*) from Team where TeamID = @ValuesTeamID) >= 0 then
+			DELETE FROM Team
+			WHERE TeamID = @ValuesTeamID;
+		else
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no Team with the entered Team";
+		end if;
+	END //
+ DELIMITER;
+
+  DELIMITER //
+create or replace Procedure TCABSTEAMPROJECTDeleteTeamProject(in EnteredProjectName varchar(255), in TeamName varchar(255), in ConvenorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
+	BEGIN
+       if (char_length(EnteredProjectName) < 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no Project name entered";
+        end if;
+
+		call TCABSTeamGetTeamKey(TeamName,ConvenorEmail,SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @ValuesTeamID);
+
+        if ((select count(*) from Project where ProjectName = EnteredProjectName) <> 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Entered Project Does not exist";
+        end if;
+
+		call TCABSTEAMPROJECTGetTeamProjectID(EnteredProjectName, TeamName, ConvenorEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @ValueTeamProjectID);
+
+		if ((select count(*) from Task where TeamProjectID = @ValueTeamProjectID) >= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Team Project already having Task cannot be deleted";
+        end if;
+
+		if (select count(*) from TeamProjects where TeamProjectID = @ValueTeamProjectID) >= 0 then
+			DELETE FROM TeamProjects
+			WHERE TeamProjectID = @ValueTeamProjectID;
+		else
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no Team Project with the entered Team Project";
+		end if;
+	END //
+ DELIMITER;
+
+  DELIMITER //
+create or replace Procedure PEERASSESSMENTFEILDDeleteFeild(in EnteredName varchar(255), in enteredfeildName varchar(255), in EnteredFeildDescription text)
+	BEGIN
+        if (char_length(EnteredFeildDescription) < 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no Feild Description entered";
+        end if;
+		if (char_length(enteredfeildName) < 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no Feild name entered";
+        end if;
+
+		call PeerAssessmentFeildGetFeildKey(EnteredName, enteredfeildName,@ValueFeildID);
+
+		if (select count(*) from PeerAssessmentFeild where FeildID = @ValueFeildID) >= 0 then
+			DELETE FROM PeerAssessmentFeild
+			WHERE FeildID = @ValueFeildID;
+		else
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no Peer Assessment Field with the entered Peer Assessment Field";
+		end if;
+	END //
+ DELIMITER;
+
+  DELIMITER //
+create or replace Procedure STUDENTPEERASSESSMENTDeleteAssessment(in EnteredName varchar(255))
+	BEGIN
+        if (char_length(EnteredName) < 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no Assessment Name";
+        end if;
+
+		call STUDENTPEERASSESSMENTGetAssessmentKey(EnteredName, @ValueSPAKey);
+
+		if ((select count(*) from PeerAssessmentFeild where SPAID = @ValueSPAKey) >= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Student Peer Assessment already having Peer Assessment cannot be deleted";
+        end if;
+
+		if ((select count(*) from SPAInstence where SPAID = @ValueSPAKey) >= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Student Peer Assessment already having SPA Instence cannot be deleted";
+        end if;
+
+		if (select count(*) from StudentPeerAssessment where SPAID = @ValueSPAKey) >= 0 then
+			DELETE FROM StudentPeerAssessment
+			WHERE SPAID = @ValueSPAKey;
+		else
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no Student Peer Assessment with the entered Student Peer Assessment";
+		end if;
+	END //
+ DELIMITER;
+
+ DELIMITER //
+create or replace Procedure SPAINSTENCEDeleteInstence(in EnteredName varchar(255), in EnteredAssessmentDate date, in StudentEmail Varchar(255), in Teamname varchar(255), in SupervisorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
+	BEGIN
+
+        declare TimerestricStart,TimeresticEnd date;
+
+        call TCABSTEAMMEMBERGetTeamMember(StudentEmail,Teamname,SupervisorEmail,SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @ValueTeamMemberID);
+        call STUDENTPEERASSESSMENTGetAssessmentKey(EnteredName,@ValueSPAKey);
+
+        select StartDate,Enddate into TimerestricStart,TimeresticEnd from TeachingPeriod where Term = SelectedOfferingterm and Year = SelectedOfferingyear;
+
+        if (EnteredAssessmentDate < TimerestricStart) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "you cannot schedual a peer assessment before the period occurs";
+        end if;
+
+        if (EnteredAssessmentDate > TimeresticEnd) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "you cannot schedual a peer assessment after the period occurs";
+        end if;
+
+		call SPAINSTENCEGetInstenceKey(EnteredName, EnteredAssessmentDate, StudentEmail, Teamname, SupervisorEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @valueSPAInstenceKey);
+
+		if (select count(*) from SPAInstence where SPAInstenceID = @valueSPAInstenceKey) >= 0 then
+			DELETE FROM SPAInstence
+			WHERE SPAInstenceID = @valueSPAInstenceKey;
+		else
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no SPA Instence with the entered SPA Instence";
+		end if;
+	END //
+ DELIMITER;
+
+    DELIMITER //
+create or replace Procedure TCABSTEAMMEMBERDeleteTeamMember(in StudentEmail varchar(255),in Teamname varchar(255), in SupervisorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
+	BEGIN
+		declare StoredEnrolmentID int;
+		if (char_length(StudentEmail) < 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no Student Email entered";
+        end if;
+        if (char_length(SupervisorEmail) < 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no Supervisor Email entered";
+        end if;
+        if (char_length(Teamname) < 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no team name entered";
+        end if;
+        if ((select count(*) from Users where email = StudentEmail) <> 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered Student Email does not exist";
+        end if;
+        if ((select count(*) from Users where email = SupervisorEmail) <> 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered Supervisor Email does not exist";
+        end if;
+
+        call TCABSUNITOFFERINGGetKey(SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @ValuesunitOfferingID);
+
+        select enrolmentID into StoredEnrolmentID from Enrolment where unitOfferingID = @ValuesunitOfferingID and sUserName = StudentEmail;
+		if( StoredEnrolmentID is null) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered Student Enrolment not exist";
+        end if;
+
+        call TCABSTEAMMEMBERGetTeamMember(StudentEmail, Teamname, SupervisorEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @ValueTeamMemberID);
+
+		if ((select count(*) from Task where TeamMemberID = @ValueTeamMemberID) >= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Team Member already having Tasks cannot be deleted";
+        end if;
+
+		if ((select count(*) from MeetingAttendees where TeamMemberID = @ValueTeamMemberID) >= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Team Member already having Meeting Attendees Instence cannot be deleted";
+        end if;
+
+		if ((select count(*) from SPAInstence where TeamMemberID = @ValueTeamMemberID) >= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Team Member already having SPA Instence cannot be deleted";
+        end if;
+
+		if (select count(*) from TeamMember where TeamMemberID = @ValueTeamMemberID) >= 0 then
+			DELETE FROM TeamMember
+			WHERE TeamMemberID = @ValueTeamMemberID;
+		else
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no Team Member with the entered Team Member";
+		end if;
+	END //
+ DELIMITER;
+
+ /*
+     DELIMITER //
+create or replace Procedure TCABSTEAMMEMBERDeleteTeamMember(in StudentEmail varchar(255),in Teamname varchar(255), in SupervisorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
+	BEGIN
+		declare StoredEnrolmentID int;
+		if (char_length(StudentEmail) < 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no Student Email entered";
+        end if;
+        if (char_length(SupervisorEmail) < 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no Supervisor Email entered";
+        end if;
+        if (char_length(Teamname) < 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no team name entered";
+        end if;
+        if ((select count(*) from Users where email = StudentEmail) <> 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered Student Email does not exist";
+        end if;
+        if ((select count(*) from Users where email = SupervisorEmail) <> 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered Supervisor Email does not exist";
+        end if;
+
+        call TCABSUNITOFFERINGGetKey(SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @ValuesunitOfferingID);
+
+        select enrolmentID into StoredEnrolmentID from Enrolment where unitOfferingID = @ValuesunitOfferingID and sUserName = StudentEmail;
+		if( StoredEnrolmentID is null) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered Student Enrolment not exist";
+        end if;
+
+        call TCABSTEAMMEMBERGetTeamMember(StudentEmail, Teamname, SupervisorEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @ValueTeamMemberID);
+
+		if ((select count(*) from Task where TeamMemberID = @ValueTeamMemberID) >= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Team Member already having Tasks cannot be deleted";
+        end if;
+
+		if ((select count(*) from MeetingAttendees where TeamMemberID = @ValueTeamMemberID) >= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Team Member already having Meeting Attendees Instence cannot be deleted";
+        end if;
+
+		if (select count(*) from TeamMember where TeamMemberID = @ValueTeamMemberID) >= 0 then
+			DELETE FROM TeamMember
+			WHERE TeamMemberID = @ValueTeamMemberID;
+		else
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no Team Member with the entered Team Member";
+		end if;
+	END //
+ DELIMITER;
+ */
+
+ DELIMITER //
+create or replace Procedure TCABSMEETINGATTENDIEESDeleteAttendiee(in StudentEmail Varchar(255),in EnteredStartTime datetime, in Teamname varchar(255), in SupervisorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
+	BEGIN
+		call TCABSMEETINGATTENDIEESGetAttendieeKey(StudentEmail, EnteredStartTime, Teamname, SupervisorEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @AttendieeMeetingKey);
+
+		if (select count(*) from MeetingAttendees where MeetingAttendeeID = @AttendieeMeetingKey) >= 0 then
+			DELETE FROM MeetingAttendees
+			WHERE MeetingAttendeeID = @AttendieeMeetingKey;
+		else
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no Meeting Attendee with the entered Meeting Attendee";
+		end if;
+END //
+ DELIMITER ;
+
+  DELIMITER //
+create or replace Procedure TCABSSUPERVISORMEETINGDeleteMeeting(in StartTime datetime, in Teamname varchar(255), in SupervisorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
+	BEGIN
+        if (StartTime <= sysdate()) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Cannot schedual a time behind the current date and time";
+        end if;
+
+		call TCABSSUPERVISORMEETINGGetMeetingKey(StartTime, Teamname, SupervisorEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @ValueSuppervisorMeetingKey);
+
+		if ((select count(*) from MeetingAttendees where MeetingID = @ValueSuppervisorMeetingKey) >= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Supervisor Meeting already having Meeting Attendees cannot be deleted";
+        end if;
+
+		if (select count(*) from SupervisorMeeting where MeetingID = @ValueSuppervisorMeetingKey) >= 0 then
+			DELETE FROM SupervisorMeeting
+			WHERE MeetingID = @ValueSuppervisorMeetingKey;
+		else
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no Supervisor Meeting with the entered Supervisor Meeting";
+		end if;
+END //
+ DELIMITER;
+
+  DELIMITER //
+create or replace Procedure TCABSENROLMENTDeleteEnrolment(in EnroledUser varchar(255),in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
+	BEGIN
+		call TCABSENROLMENTGetEnrolKey(EnroledUser, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @ValueEnrolID);
+
+		if ((select count(*) from TeamMember where enrolmentID = @ValueEnrolID) >= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Enrolment already having Teams cannot be deleted";
+        end if;
+
+		if (select count(*) from Enrolment where enrolmentID = @ValueEnrolID) >= 0 then
+			DELETE FROM Enrolment
+			WHERE enrolmentID = @ValueEnrolID;
+		else
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no Enrolment with the entered Enrolment";
+		end if;
+	END //
+ DELIMITER;
+
+  DELIMITER //
+create or replace Procedure TCABSOFFERINGSTAFFDeleteOfferingStaff(in UserEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
+	BEGIN
+		if (char_length(UserEmail) < 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no User Email entered";
+        end if;
+
+        if ((select count(*) from Users where email = UserEmail) <> 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered User Email does not exist";
+        end if;
+
+        call TCABSOFFERINGSTAFFGetOfferingStaffKey(UserEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @ValueOfferingStaff);
+
+		if ((select count(*) from Team where OfferingStaffID = @ValueOfferingStaff) >= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Team already having Offering Staff cannot be deleted";
+        end if;
+
+		if (select count(*) from OfferingStaff where OfferingStaffID = @ValueOfferingStaff) >= 0 then
+			DELETE FROM OfferingStaff
+			WHERE OfferingStaffID = @ValueOfferingStaff;
+		else
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no Offering Staff with the entered Offering Staff";
+		end if;
+	END //
+ DELIMITER;
+
+  DELIMITER //
+create or replace PROCEDURE TCABSUNITOFFERINGDeleteOffering( in OfferedUnitID Varchar(255), in Offeredterm varchar(255), in Offeredyear varchar(255))
+	BEGIN
+		if(char_length(OfferedUnitID) <= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "the Unit feild has not been filled";
+		end if;
+		if((select count(*) from tcabs.Unit where unitCode = OfferedUnitID) <> 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "the Unit you entered does not exist";
+		end if;
+
+		call TCABSUNITOFFERINGGetKey(OfferedUnitID, Offeredterm, Offeredyear, @ValuesunitOfferingID);
+
+		if ((select count(*) from OfferingProject where unitOfferingID = @ValuesunitOfferingID) >= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Unit Offering already having Offering PRoject cannot be deleted";
+        end if;
+
+		if ((select count(*) from Enrolment where unitOfferingID = @ValuesunitOfferingID) >= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Unit Offering already having Enrolment cannot be deleted";
+        end if;
+
+		if ((select count(*) from OfferingStaff where unitOfferingID = @ValuesunitOfferingID) >= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Unit Offering already having Offering Staff cannot be deleted";
+        end if;
+
+		if (select count(*) from UnitOffering where unitOfferingID = @ValuesunitOfferingID) >= 0 then
+			DELETE FROM UnitOffering
+			WHERE unitOfferingID = @ValuesunitOfferingID;
+		else
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no Unit Offering with the entered Unit Offering";
+		end if;
+	END //
+DELIMITER;
+
+/*
+  DELIMITER //
+create or replace PROCEDURE TCABSUNITOFFERINGDeleteOffering( in OfferedUnitID Varchar(255), in Offeredterm varchar(255), in Offeredyear varchar(255))
+	BEGIN
+		if(char_length(OfferedUnitID) <= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "the Unit feild has not been filled";
+		end if;
+		if((select count(*) from tcabs.Unit where unitCode = OfferedUnitID) <> 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "the Unit you entered does not exist";
+		end if;
+
+		call TCABSUNITOFFERINGGetKey(OfferedUnitID, Offeredterm, Offeredyear, @ValuesunitOfferingID);
+
+		if ((select count(*) from OfferingProject where unitOfferingID = @ValuesunitOfferingID) >= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Unit Offering already having Offering PRoject cannot be deleted";
+        end if;
+
+		if ((select count(*) from Enrolment where unitOfferingID = @ValuesunitOfferingID) >= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Unit Offering already having Enrolment cannot be deleted";
+        end if;
+
+		if ((select count(*) from OfferingStaff where unitOfferingID = @ValuesunitOfferingID) >= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Unit Offering already having Offering Staff cannot be deleted";
+        end if;
+
+		if ((select count(*) from SPAInstence where unitOfferingID = @ValuesunitOfferingID) >= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Unit Offering already having SPA Instence cannot be deleted";
+        end if;
+
+		if (select count(*) from UnitOffering where unitOfferingID = @ValuesunitOfferingID) >= 0 then
+			DELETE FROM UnitOffering
+			WHERE unitOfferingID = @ValuesunitOfferingID;
+		else
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no Unit Offering with the entered Unit Offering";
+		end if;
+	END //
+DELIMITER;
+*/
+
+  DELIMITER //
+create or replace Procedure TCABSPERMISSIONDeletePermission(in RoleName varchar(255), in Functionality varchar(255))
+	BEGIN
+		if (char_length(RoleName) < 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no Role name entered";
+        end if;
+        if (char_length(Functionality) < 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no Functionality entered";
+        end if;
+
+        if ((select count(*) from Permission where usertype = RoleName) <> 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered Role name does not exist";
+        end if;
+        if ((select count(*) from Permission where procName = Functionality) <> 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered Functionality does not exist";
+        end if;
+
+		if (select count(*) from Permission where usertype = RoleName AND procName = Functionality) >= 0 then
+			DELETE FROM Permission
+			where usertype = RoleName
+			AND procName = Functionality;
+		else
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no Permission with the entered Permission";
+		end if;
+	END //
+ DELIMITER;
+
+  DELIMITER //
+create or replace PROCEDURE TCABSUNITDeleteunit( in EnteredUnitcode varchar(10), in EnteredUnitname varchar(100))
+	BEGIN
+		if (char_length(EnteredUnitcode) < 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no Unit Code entered";
+        end if;
+		if (char_length(EnteredUnitname) < 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no Unit name entered";
+        end if;
+
+		if ((select count(*) from Unit where unitCode = EnteredUnitcode) <> 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered Unit Code does not exist";
+        end if;
+        if ((select count(*) from Unit where unitName = EnteredUnitname) <> 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered Unit name does not exist";
+        end if;
+
+		if ((select count(*) from UnitOffering where unitCode = EnteredUnitcode) >= 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Unit already having Unit Offering cannot be deleted";
+        end if;
+
+		if (select count(*) from Unit where unitCode = EnteredUnitcode AND unitName = EnteredUnitname) >= 0 then
+			DELETE FROM Unit
+			where unitCode = EnteredUnitcode
+			AND unitName = EnteredUnitname;
+		else
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no Unit with the entered Unit";
+		end if;
+	END //
+ DELIMITER;
+
+  DELIMITER //
+create or replace Procedure TCABSTEACHINGPERIODDeletePeriod(in EnteredTerm varchar(255), in EnteredYear varchar(255))
+	BEGIN
+		if (char_length(EnteredTerm) < 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no term name entered";
+        end if;
+
+		if (char_length(EnteredYear) < 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no year number entered";
+        end if;
+
+		if ((select count(*) from TeachingPeriod where term = EnteredTerm) <> 1) && ((select count(*) from TeachingPeriod where year = EnteredYear) <> 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered Term and Year do not exist";
+        end if;
+
+		if ((select count(*) from UnitOffering where term = EnteredTerm) >= 1) && ((select count(*) from UnitOffering where year = EnteredYear) <> 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Teaching Period already having Unit Offering cannot be deleted";
+        end if;
+
+		if (select count(*) from TeachingPeriod where term = EnteredTerm AND year = EnteredYear) >= 0 then
+			DELETE FROM TeachingPeriod
+			where term = EnteredTerm
+			AND year = EnteredYear;
+		else
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no Teaching Period with the entered Teaching Period";
+		end if;
+	END //
+ DELIMITER;
 
 -- ---------------------------------------No Procedures or Functions after this point -----------------------------------------------
 -- Functions

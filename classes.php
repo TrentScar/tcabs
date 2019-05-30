@@ -821,6 +821,33 @@
 			}
 			return $teams;
 		}
+
+		public function updateTeam($tname, $supemail, $unitcode, $term, $year) {
+		
+			$stmt = $GLOBALS['conn']->prepare("CALL TCABSUpdateFullTeam(?, ?, ?, ?)");
+			$stmt->bind_param("sssss", $tname, $supemail, $unitcode, $term, $year);
+			
+			try {
+				$stmt->execute();
+			} catch(mysqli_sql_exception $e) {
+				throw $e;
+			}
+			$stmt->close();
+		}
+
+		public function deleteTeam($tname, $supemail, $unitcode, $term, $year) {
+		
+			$stmt = $GLOBALS['conn']->prepare("CALL TCABSTeamDeleteTeam(?, ?, ?, ?)");
+			$stmt->bind_param("sssss", $tname, $supemail, $unitcode, $term, $year);
+			
+			try {
+				$stmt->execute();
+			} catch(mysqli_sql_exception $e) {
+				throw $e;
+			}
+			$stmt->close();
+		}
+		
 	}
 
 	class Project {
@@ -844,17 +871,19 @@
 			
 			$searchResult = array();
 
-			$stmt = $GLOBALS['conn']->prepare("SELECT T.TeamID, T.TeamName, 
-								T.OfferingStaffID, OF.UserName,T.projectManager, 
-								OF.UnitOfferingID, UO.unitCode, UO.term, UO.year
-								FROM Team T INNER JOIN OfferingStaff OF ON T.OfferingStaffID = OF.OfferingStaffID
-								INNER JOIN UnitOffering UO ON UO.unitOfferingID = OF.UnitOfferingID
-								WHERE T.TeamID LIKE ? or T.TeamName LIKE ?"
+			$stmt = $GLOBALS['conn']->prepare("SELECT P.projectName,  
+								P.ProjectDescription, UO.unitOffering, UO.unitCode, UO.unitName, 
+								UO.term, UO.year, UO.cUserName
+								FROM Project P INNER JOIN OfferingProject O
+								ON O.ProjectName = P.ProjectName
+								INNER JOIN UnitOffering UO
+								ON UO.unitOfferingID = O.UnitOfferingID
+								WHERE P.ProjectName LIKE ? or P.ProjectID LIKE ? or UO.unitCode LIKE ?" 
 								);
-			$stmt->bind_param('ss', $searchQuery, $searchQuery);
+			$stmt->bind_param('sss', $searchQuery, $searchQuery, $searchQuery);
 
-			$teams = [];
-
+			$projects = [];
+//
 			try {
 				$stmt->execute();
 				$stmt->store_result();
