@@ -117,13 +117,43 @@
 				
 				else 	if(isset($_POST['update'])) {
 						//something here ---------------------
-						echo "update " . $_POST['update'];
+						// echo "update " . $_POST['update'];
 
 					// DELETE USER
 					} else 	if(isset($_POST['delete'])) {
-						//something here ---------------------
-						echo "delete " . $_POST['delete'];
+						
+			/* Switch off auto commit to allow transactions*/
+		mysqli_autocommit($conn, FALSE);
+		$query_success = TRUE;
+	
+			
+			
+			// Delete the User
+			$stmt = $GLOBALS['conn']->prepare("CALL TCABSDeleateUser(?)");
+			$stmt->bind_param("s", $_POST['delete']);
+			
+			try {
+				$stmt->execute();
+				
+				mysqli_commit($conn);
+				echo "<script type='text/javascript'>alert('User deleted successfully');</script>";
+			} catch(mysqli_sql_exception $e) {
+				echo "<script type='text/javascript'>alert('{$e->getMessage()}');</script>";
+				mysqli_rollback($conn);
+			}
 					}
+			}
+				if(isset($_GET['status']) && $_GET['status'] == "succ") {
+				echo "<script type='text/javascript'>alert('CSV Import Success!');</script>";
+			}
+			
+			if(isset($_GET['status']) && $_GET['status'] == "invalid_file") {
+				echo "<script type='text/javascript'>alert('CSV Import Failed. Invalid File');</script>";
+			}
+			
+			
+			if(isset($_GET['status']) && $_GET['status'] == "err") {
+				echo "<script type='text/javascript'>alert('CSV Import Error. Please check');</script>";
 			}
 		}
 	}
@@ -159,7 +189,7 @@
 				<a class="nav-link <?php if(isset($_POST['submit']) && $_POST['submit'] == 'bulkImport') { echo 'active';} ?>" data-toggle="tab" href="#menu1">Bulk Import via CSV</a>
 			</li>
 			<li class="nav-item">
-				<a class="nav-link <?php if(isset($_POST['submit']) && $_POST['submit'] == 'search') { echo 'active';} ?>" data-toggle="tab" href="#menu2">Search</a>
+				<a class="nav-link <?php if(isset($_POST['submit']) && $_POST['submit'] == 'search') { echo 'active';} ?>" data-toggle="tab" href="#menu2">Update/Delete</a>
 			</li>
 		</ul>
 		<?php  } ?>
@@ -172,7 +202,7 @@
 				if(isset($_POST['update'])) {
 				$nUser = new User;	
 				$searchResults = $nUser->searchUser("%{$_POST['update']}%");
-				print_r($searchResults);
+				// print_r($searchResults);
 				foreach($searchResults as $key => $value) {
 								$name = $value['fName'] . " " . $value['lName'];
 								$email = $value['email'];
@@ -249,12 +279,18 @@
 		
 		<!-- Tab 2 -->	
   	<div class="tab-pane container fade <?php if(isset($_POST['submit']) && $_POST['submit'] == 'bulkImport') { echo 'active show';} ?>" id="menu1">
-  		<form action="registerUser.php" method ="POST" enctype="multipart/form-data" class="was-validated"><br>
+  		<br>
   	  	<p class="h4 mb-4 text-center">Bulk Import via CSV</p>
+		<div class="col-mb-4 text-center"> 
+		<a class="btn btn-outline-info" href="../csv/users.csv" role="button">CSV Template Download</a>
+		</div>
+		<br><br>
   			<div class="form-group">
       <div class="custom-file">
-    <input type="file" class="custom-file-input" id="csvFile" required>
+	  <form action="importCSVUser.php" method="post" enctype="multipart/form-data">
+    <input type="file" class="custom-file-input" id="file" name="file" required>
     <label class="custom-file-label" for="csvFile">Choose file</label>
+
   </div>
 
 <script>
@@ -265,7 +301,7 @@ $(".custom-file-input").on("change", function() {
 });
 </script>
   			</div>
-  			<button class="btn btn-info my-4 btn-block" type="submit" name="submit" value="bulkImport">Import</button>
+  			<button class="btn btn-info my-4 btn-block" type="submit" name="importSubmit" value="IMPORT">Import</button>
 			</form>
 		</div>
 		
@@ -297,7 +333,9 @@ $(".custom-file-input").on("change", function() {
     				</tr>
 
 						<?php 
-
+							if ($searchResults == NULL) {
+							echo "<script type='text/javascript'>alert('Oops nothing found!');</script>";
+							} else {
 							foreach($searchResults as $key => $value) {
 								$name = $value['fName'] . " " . $value['lName'];
 								$email = $value['email'];
@@ -311,7 +349,7 @@ $(".custom-file-input").on("change", function() {
 							
 						</tr>
 
-						<?php  }?>
+							<?php  }}?>
 
 					</table>
 				</form><br>

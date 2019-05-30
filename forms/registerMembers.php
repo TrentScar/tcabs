@@ -5,7 +5,6 @@
 		header('Location: /tcabs/login.php');
 		exit();
 	} else {
-
 		// check if user has permission to access the page
 		if(!$_SESSION['loggedUser']->uRoles['convenor']) {
 			header('Location: /tcabs/dashboard.php');
@@ -38,23 +37,18 @@
 							}
 						}
 					} else if($_POST['submit'] == 'editMember') {
-
 						//$unitObj = new Unit;
 						//$unitObj->unitCode = $_POST['unitCode'];
 						//$unitObj->unitName = $_POST['unitName'];
 						//$unitObj->unitFaculty = $_POST['unitFaculty'];
-
 						try {
 							//$unitObj->updateUnit($unitObj);
 							//echo "<script type='text/javascript'>alert('Unit updated successfully!');</script>";
 						} catch(mysqli_sql_exception $e) {
 							//echo "<script type='text/javascript'>alert('{$e->getMessage()}');</script>";
 						}
-
 					} else if($_POST['submit'] == 'update') {
-
 					} else  if($_POST['submit'] == 'delete') {
-
 					}
 				}
 			}
@@ -176,7 +170,6 @@
     				</tr>
 
 						<?php 
-
 							foreach($searchResults as $key => $value) {
 								//$name = $value['unitCode'];
 								//$email = $value['unitName'];
