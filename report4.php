@@ -36,31 +36,38 @@ function filterTable($query)
     <meta charset="utf-8" />
     <meta http-equiv="x-ua-compatible" content="ie=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-	</head>
+
   <body class="loggedin">
 		<?php include "styles/stylesheet.php"; ?>
 
 			<body class="loggedin">
 				<?php include "views/header.php"; ?>
 			<div class="content">
-			<h2>Generated Report</h2><h2-date><?php echo date('d F, Y (l)'); ?></h2-date><br>
-
+			<h2>Available reports to generate</h2><h2-date><?php echo date('d F, Y (l)'); ?></h2-date><br>
 			<div>
 				<?php
 				//Check the Users role to see if they have access to this
 				$roleFound = FALSE;
 				foreach($_SESSION['loggedUser']->uRoles as $userType => $access) {
-					if($userType=='convenor') {
+					if($userType=='admin') {
 						$roleFound = TRUE;
-					} else if($userType=='supervisor') {
-						$roleFound = TRUE;
-				} }?>
+				?>
+    <div class="btn-group btn-group-justified">
+      <a href="report.php" class="btn btn-primary">Overview</a>
+      <a href="report1.php" class="btn btn-primary">1</a>
+      <a href="report2.php" class="btn btn-primary">2</a>
+      <a href="report3.php" class="btn btn-primary">3</a>
+      <a href="report4.php" class="btn btn-primary">4</a>
+      <a href="report5.php" class="btn btn-primary">5</a>
+      <a href="report6.php" class="btn btn-primary">6</a>
+      <a href="report7.php" class="btn btn-primary">7</a>
+      <a href="report8.php" class="btn btn-primary">8</a>
+      <a href="report9.php" class="btn btn-primary">9</a>
+      <a href="report10.php" class="btn btn-primary">10</a>
+    </div>
+    <br>
+    <p class="h4 mb-4 text-center">4. List of registered projects</p>
 
-				<?php
-				//If they have the correct role to view the page
-				if($roleFound == TRUE) { ?>
-
-    <p class="h4 mb-4 text-center">List of registered projects</p>
     <body>
         <form action="report4.php" method="post">
             <input type="text" name="valueToSearch" placeholder="Search.."><br><br>
@@ -93,19 +100,18 @@ function filterTable($query)
             </div>
         </form>
     </body>
-	<?php } ?>
+  <?php  } }
 
-<?php
-//If they dont have correct permission
-if ($roleFound == FALSE) { ?>
+	//If they dont have correct permission
+	if ($roleFound == FALSE) { ?>
 
-<h2>Permission Denied</h2>
-<div>
-<p>Sorry, you do not have access to this page. Please contact your administrator.</p>
-</div>
-<?php  }  ?>
-</div>
-</div>
+		<h2>Permission Denied</h2>
+		<div>
+		<p>Sorry, you do not have access to this page. Please contact your administrator.</p>
+		</div>
+	<?php  }  ?>
+		</div>
+	</div>
 </body>
 <?php include "views/footer.php"; ?>
 </html>

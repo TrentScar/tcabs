@@ -50,52 +50,15 @@
 						} catch(mysqli_sql_exception $e) {
 							echo "<script type='text/javascript'>alert('{$e->getMessage()}');</script>";
 						}
+
+					} else if($_POST['submit'] == 'update') {
+
+					} else  if($_POST['submit'] == 'delete') {
+
 					}
 				}
-			
-
-					if(isset($_POST['update'])) {
-					}
-
-				 if(isset($_POST['delete'])) {
-						
-			/* Switch off auto commit to allow transactions*/
-		mysqli_autocommit($conn, FALSE);
-		$query_success = TRUE;
-	
-			
-			
-			// Delete the Unit
-			$stmt = $GLOBALS['conn']->prepare("CALL TCABSDeleteUnit(?)");
-			$stmt->bind_param("s", $_POST['delete']);
-			
-			try {
-				$stmt->execute();
-				
-				mysqli_commit($conn);
-				echo "<script type='text/javascript'>alert('Unit deleted successfully');</script>";
-			} catch(mysqli_sql_exception $e) {
-				echo "<script type='text/javascript'>alert('{$e->getMessage()}');</script>";
-				mysqli_rollback($conn);
 			}
-
-					}
-				
-		
 		}
-			if(isset($_GET['status']) && $_GET['status'] == "succ") {
-				echo "<script type='text/javascript'>alert('CSV Import Success!');</script>";
-			}
-			
-			if(isset($_GET['status']) && $_GET['status'] == "invalid_file") {
-				echo "<script type='text/javascript'>alert('CSV Import Failed. Invalid File');</script>";
-			}
-			
-			
-			if(isset($_GET['status']) && $_GET['status'] == "err") {
-				echo "<script type='text/javascript'>alert('CSV Import Error. Please check');</script>";
-			}
-	}
 	}
 ?>
 
@@ -113,7 +76,7 @@
   <body class="loggedin">
 		<?php include "../views/header.php"; ?>
 		<div class="content">
-			<h2>Manage Units</h2><h2-date><?php echo date('d F, Y (l)'); ?></h2-date><br>
+			<h2>Add Units</h2><h2-date><?php echo date('d F, Y (l)'); ?></h2-date><br>
 		<div>
 
 		<?php 
@@ -129,7 +92,7 @@
 				<a class="nav-link <?php if(isset($_POST['submit']) && $_POST['submit'] == 'bulkAddUnits') { echo 'active';} ?>" data-toggle="tab" href="#menu1">Bulk Import via CSV</a>
   		</li>
     	<li class="nav-item">
-    		<a class="nav-link <?php if((isset($_POST['submit']) && $_POST['submit'] == 'search') || $_POST['submit']== 'editUnit') { echo 'active';} ?>" data-toggle="tab" href="#menu2">Update/Delete</a>
+    		<a class="nav-link <?php if((isset($_POST['submit']) && $_POST['submit'] == 'search') || $_POST['submit']== 'editUnit') { echo 'active';} ?>" data-toggle="tab" href="#menu2">Search</a>
   		</li>
 		</ul>
 
@@ -185,31 +148,19 @@
 
 			<!-- Tab 2 -->
   		<div class="tab-pane container fade <?php if(isset($_POST['submit']) && $_POST['submit'] == 'bulkAddUnits') { echo 'active show';} ?>" id="menu1">
-		<br>
-  	  	<p class="h4 mb-4 text-center">Bulk Import via CSV</p>
-		<div class="col-mb-4 text-center"> 
-		<a class="btn btn-outline-info" href="../csv/units.csv" role="button">CSV Template Download</a>
-		</div>
-		<br><br>
-  			<div class="form-group">
-      <div class="custom-file">
-	  <form action="importCSVUnits.php" method="post" enctype="multipart/form-data">
-    <input type="file" class="custom-file-input" id="file" name="file" required>
-    <label class="custom-file-label" for="csvFile">Choose file</label>
+				<form action="registerUnits.php" method ="post" class="was-validated"><br/>
+  	  		<p class="h4 mb-4 text-center">Bulk Import</p>
+  				<div class="form-group">
+						<div class="custom-file">
+							<input type="file" class="custom-file-input" id="csvFile" required>
+							<label class="custom-file-label" for="csvFile">Choose file</label>
+						</div>
 
-  </div>
-
-<script>
-// Add the following code if you want the name of the file appear on select
-$(".custom-file-input").on("change", function() {
-  var fileName = $(this).val().split("\\").pop();
-  $(this).siblings(".custom-file-label").addClass("selected").html(fileName);
-});
-</script>
-  			</div>
-  			<button class="btn btn-info my-4 btn-block" type="submit" name="importSubmit" value="IMPORT">Import</button>
-			</form>
-		</div>
+	
+  				</div>
+  				<button class="btn btn-info my-4 btn-block" type="submit" name="submit" value="bulkAddUnits">Register Units</button>
+				</form>
+			</div>
 
 			<!-- Tab 3 -->
   		<div class="tab-pane container fade <?php if((isset($_POST['submit']) && $_POST['submit'] == 'search') || $_POST['submit']== 'editUnit') { echo 'active show';} ?>" id="menu2">
