@@ -39,11 +39,12 @@ function filterTable($query)
 
   <body class="loggedin">
 		<?php include "styles/stylesheet.php"; ?>
+	<body class="loggedin">
+		<?php include "views/header.php"; ?>
 
-			<body class="loggedin">
-				<?php include "views/header.php"; ?>
 			<div class="content">
-			<h2>Available reports to generate</h2><h2-date><?php echo date('d F, Y (l)'); ?></h2-date><br>
+				<h2>Generated Report</h2><h2-date><?php echo date('d F, Y (l)'); ?></h2-date><br>
+
 			<div>
 				<?php
 				//Check the Users role to see if they have access to this
@@ -51,22 +52,16 @@ function filterTable($query)
 				foreach($_SESSION['loggedUser']->uRoles as $userType => $access) {
 					if($userType=='admin') {
 						$roleFound = TRUE;
-				?>
-    <div class="btn-group btn-group-justified">
-      <a href="report.php" class="btn btn-primary">Overview</a>
-      <a href="report1.php" class="btn btn-primary">1</a>
-      <a href="report2.php" class="btn btn-primary">2</a>
-      <a href="report3.php" class="btn btn-primary">3</a>
-      <a href="report4.php" class="btn btn-primary">4</a>
-      <a href="report5.php" class="btn btn-primary">5</a>
-      <a href="report6.php" class="btn btn-primary">6</a>
-      <a href="report7.php" class="btn btn-primary">7</a>
-      <a href="report8.php" class="btn btn-primary">8</a>
-      <a href="report9.php" class="btn btn-primary">9</a>
-      <a href="report10.php" class="btn btn-primary">10</a>
-    </div>
-    <br>
-    <p class="h4 mb-4 text-center">2. List of students enrolled in a unit of study</p>
+					} else if($userType=='convenor') {
+						$roleFound = TRUE;
+				} }?>
+
+
+				<?php
+				//If they have the correct role to view the page
+				if($roleFound == TRUE) { ?>
+
+    <p class="h4 mb-4 text-center">List of students enrolled in a unit of study</p>
 
     <body>
         <form action="report2.php" method="post">
@@ -98,18 +93,19 @@ function filterTable($query)
             </div>
         </form>
     </body>
-  <?php  } }
+	<?php } ?>
 
-	//If they dont have correct permission
-	if ($roleFound == FALSE) { ?>
+<?php
+//If they dont have correct permission
+if ($roleFound == FALSE) { ?>
 
-		<h2>Permission Denied</h2>
-		<div>
-		<p>Sorry, you do not have access to this page. Please contact your administrator.</p>
-		</div>
-	<?php  }  ?>
-		</div>
-	</div>
+<h2>Permission Denied</h2>
+<div>
+<p>Sorry, you do not have access to this page. Please contact your administrator.</p>
+</div>
+<?php  }  ?>
+</div>
+</div>
 </body>
 <?php include "views/footer.php"; ?>
 </html>
