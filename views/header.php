@@ -17,37 +17,24 @@
 				$adminArr = array(
 					"registerUser.php" => "Manage Users",
 					"registerUnits.php" => "Manage Units",
-					"registerUnitsOfStudy.php" => "Manage Units of Study",
 					// "registerStudents.php" => "Register Students",
-					"registerEnrolment.php" => "Manage Enrolments",
-					"../manageStaffOffering.php" => "Manage Staff Offering",
-					          "../report1.php" => "Registered Convenors",
-          "../report2.php" => "Enrolled Students",
-          "../report3.php" => "Registered Supervisors"
+					"enrolStudents.php" => "Manage Enrolments"
 				);
 
 				$convenorArr = array(
-					"../manageTeams.php" => "Manage Teams",
+					"registerTeam.php" => "Manage Teams",
 					"registerProject.php" => "Manage Projects",
 					"setupRoles.php" => "Manage Roles",
-					"allocateRoles.php" => "Allocate Roles",
-					"../manageStaffOffering.php" => "Manage Staff Offering",
-					          "../report2.php" => "Enrolled Students",
-          "../report3.php" => "Registered Supervisors",
-          "../report4.php" => "Registered Projects",
-          "../report5.php" => "Registered Teams",
+					"setPeerAssessment.php" => "Set Peer Assessment",
 				);
 
 				$supervisorArr = array(
 					"supervisorMeeting.php" => "Meetings",
-					          "../report4.php" => "Registered Projects",
-          "../report5.php" => "Registered Teams",
-          "../report10.php" => "Meeting Summaries"
 				);
 
 				$studentArr = array(
 					"studentTasks.php" => "Tasks",
-					"studentPeerAssess.php" => "Peer Assessment",
+					//"studentPeerAssess.php" => "Peer Assessment", 	// not in scope
 					"studentSupervisorMeeting.php" => "Supervisor Meetings",
 					"studentTeamMeeting.php" => "Team Meetings",
 					
@@ -81,8 +68,6 @@
 					}
 				}
 			?>
-			
-
 	  	<li class="nav-item">
 				<a class="nav-link" href="/tcabs/logout.php">Logout</a>
       </li>

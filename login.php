@@ -27,7 +27,6 @@
 					//print_r($_SESSION['loggedUser']->uRoles);
 					//print_r($_SESSION['loggedUser']->uPerms);
 
-
 					$_SESSION['roles'] = $_SESSION['loggedUser']->roles;
 
 					header("location: dashboard.php"); // login and redirect to main page

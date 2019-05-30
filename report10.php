@@ -43,16 +43,16 @@ function filterTable($query)
 			<body class="loggedin">
 				<?php include "views/header.php"; ?>
 			<div class="content">
-			<h2>Generated Report</h2><h2-date><?php echo date('d F, Y (l)'); ?></h2-date><br>
+			<h2>Available reports to generate</h2><h2-date><?php echo date('d F, Y (l)'); ?></h2-date><br>
 			<div>
 				<?php
 				//Check the Users role to see if they have access to this
 				$roleFound = FALSE;
 				foreach($_SESSION['loggedUser']->uRoles as $userType => $access) {
-					if($userType=='supervisor') {
+					if($userType=='admin') {
 						$roleFound = TRUE;
 				?>
-    <!--<div class="btn-group btn-group-justified">
+    <div class="btn-group btn-group-justified">
       <a href="report.php" class="btn btn-primary">Overview</a>
       <a href="report1.php" class="btn btn-primary">1</a>
       <a href="report2.php" class="btn btn-primary">2</a>
@@ -64,8 +64,9 @@ function filterTable($query)
       <a href="report8.php" class="btn btn-primary">8</a>
       <a href="report9.php" class="btn btn-primary">9</a>
       <a href="report10.php" class="btn btn-primary">10</a>
-    </div>-->
-    <p class="h4 mb-4 text-center">Meeting summary</p>
+    </div>
+    <br>
+    <p class="h4 mb-4 text-center">10. Meeting summary</p>
 
     <body>
         <form action="report10.php" method="post">
