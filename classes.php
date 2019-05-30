@@ -75,6 +75,12 @@
 
 		public function assignRoles($userEmail, $userRoleArr) {
 			// how to roll back if error occurs for some role
+			
+			// delete current roles
+			$stmt = $GLOBALS['conn']->prepare("delete from UserCat where email = ?");
+			$stmt->bind_param('s', $userEmail);
+			$stmt->execute();
+			
 			$stmt = $GLOBALS['conn']->prepare("call TCABSUserCatAssignUserARole(?, ?)");
 
 			foreach($userRoleArr as $userRole => $value) {
@@ -308,6 +314,39 @@
 
 			$stmt->close();
 		}
+		
+			// to edit a user updating Users and UserCat tables
+		public function updateUser($fName, $lName, $gender, $pNum, $email, $roles) {
+
+			// convert pNum to ###-###-####
+			// will only work on 10-digit number without country code
+			$pNum = sprintf("%s-%s-%s", substr($pNum, 0, 3), substr($pNum, 3, 3), substr($pNum, 6, 4));
+
+			// encrypt password
+
+			$stmt = $GLOBALS['conn']->prepare("call TCABS_User_Update(?, ?, ?, ?, ?)");
+			$stmt->bind_param('sssss', $fName, $lName, $gender, $pNum, $email);
+
+			try {
+				$GLOBALS['conn']->begin_transaction();
+
+				$stmt->execute();
+
+				// to update userCat table
+				$roleObj = new Role;
+				$roleObj->assignRoles($email, $roles);
+
+				$GLOBALS['conn']->commit();
+
+			} catch(mysqli_sql_exception $e) {
+				$GLOBALS['conn']->rollback();
+				throw $e;
+			}
+
+			$stmt->close();
+		}
+		
+
 	}
 
 	class Unit {
@@ -427,38 +466,6 @@
 			$offerings = array();
 		}
 
-		public function getUnitOffering($unitCode, $term, $year) {
-
-			$stmt = $GLOBALS['conn']->prepare("SELECT * 
-								FROM UnitOffering WHERE unitCode = ? and term = ? and year = ?");
-			$stmt->bind_param('sss', $unitCode, $term, $year);
-
-			$uOffObj = new UnitOffering;
-
-			try {
-				$stmt->execute();
-				$stmt->store_result();
-				$stmt->bind_result($uOffID, $unitCode, $cUserName, $term, $year, $censusDate);
-
-				if($stmt->num_rows > 0) {
-					while($stmt->fetch()) {
-						$uOffObj->uOffID = $uOffID;
-						$uOffObj->unitCode = $unitCode;
-						$uOffObj->cUserName = $cUserName;
-						$uOffObj->term = $term;
-						$uOffObj->year = $year;
-						$uOffObj->censusDate = $censusDate;
-					}
-				} else {
-					$uOffObj = null;
-				}
-				$stmt->close();
-			} catch(mysqli_sql_exception $e) {
-				throw $e;
-			}
-			return $uOffObj;
-		}
-
 		// return offerings array
 		public function getOfferings($unitCode) {
 
@@ -508,57 +515,6 @@
 		public $enrolmentID;
 		public $sUserName;
 		public $unitOfferingID;
-
-		public function getUnitEnrolments($unitCode, $term, $year) {
-
-			// Array of all enrolments in a unit offering
-			$enrolments = [];
-
-			// get UnitOffering ID using member function in UnitOffering class
-			$uOffObj = new UnitOffering;
-			$uOffObj = $uOffObj->getUnitOffering($unitCode, $term, $year);
-
-			if(!isset($uOffObj)) {
-				throw new Exception('No Enrolments found!');
-			} else {
-				
-				$uOffID = $uOffObj->uOffID;
-				$stmt = $GLOBALS['conn']->prepare("SELECT E.sUserName, UO.unitCode, U.unitName, UO.term, UO.year 
-									FROM Enrolment E INNER JOIN UnitOffering UO
-									ON E.unitOfferingID = UO.unitOfferingID
-									INNER JOIN Unit U
-									ON UO.unitCode = U.UnitCode
-									WHERE E.unitOfferingID = ?");
-
-				$stmt->bind_param('s', $uOffID);
-
-				try {
-					$stmt->execute();
-					$stmt->store_result();
-					$stmt->bind_result($sUserName, $unitCode, $unitName, $term, $year);
-
-					$i = 0;
-					if($stmt->num_rows > 0) {
-						while($stmt->fetch()) {
-
-							$enrolments[$i] = (array)[
-								"sUserName" => $sUserName,
-								"unitCode" => $unitCode,
-								"unitName" => $unitName,
-								"term" => $term,
-								"year" => $year
-							];
-
-							$i = $i +1;
-						}
-					} else throw new Exception('No Enrolments found in table');
-					$stmt->close();
-				} catch(mysqli_sql_exception $e) {
-					throw $e;
-				}
-			}
-			return $enrolments;
-		}
 
 		public function getAllEnrolments() {
 		
@@ -883,7 +839,6 @@
 			$stmt->bind_param('sss', $searchQuery, $searchQuery, $searchQuery);
 
 			$projects = [];
-//
 			try {
 				$stmt->execute();
 				$stmt->store_result();

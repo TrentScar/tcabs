@@ -6,22 +6,6 @@
 	if(!isset($_SESSION['logged_in'])) {
 		header("location: /tcabs/login.php");
 	}
-	
-	//$enrolObj = new Enrolment;
-	//print_r($enrolObj->getUnitEnrolments("ICT30002", "Semester 1", "2019"));
-
-	//$teamObj = new TeamMember;
-	//print_r($teamObj->searchMembers("%a%"));
-	
-	$teamObj = new Team;
-	//print_r($teamObj->getTeam(1)); //works
-	//print_r($teamObj->searchTeam("%j%")); //works
-	//$teamObj->addTeam("just a name", "dtargaryen@gmail.com", "ICT30004", "Semester 1", "2019"); //works
-	//$teamObj->updateTeam("just a name", "dtargaryen@gmail.com", "ICT30001", "Semester 2", "2018", "dtargaryen@gmail.com", "just a name updated 2", "astark@gmail.com"); //works
-	$teamObj->deleteTeam("just a name", "dtargaryen@gmail.com", "ICT30001", "Semester 2", "2018"); //works
-
-	$projObj = new Project;
-	$projObj->addProject("Test team name", "asdkfjskdfsadfkjdsjhfjsdhflusadhfjahsdjfhsdajfhsaddjhfakjds"); //works
 
 	// subquery returns more than one row(error)
 	//$uOffObj = new UnitOffering("STA10003");
@@ -57,7 +41,7 @@
 		<div class="content">
 			<h2>Welcome, <?php echo $_SESSION['loggedUser']->fName?></h2><h2-date><?php echo date('d F, Y (l)'); ?></h2-date><br>
 			<div>
-				<p> Here </p>
+				<p>Welcome</p>
 			</div>
 		</div>
   </body>

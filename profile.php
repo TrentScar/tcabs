@@ -47,7 +47,15 @@
 						<td><?php echo "{$_SESSION['loggedUser']->gender}"?></td>
 					</tr>
 						<td>Access Levels:</td>
-						<!--<td><?php# echo "{$_SESSION['loggedUser']->pNum}"?></td>
+						<td><p>
+								<?php 
+		//Check the Users role to see if they have access to this
+					
+		foreach($_SESSION['loggedUser']->uRoles as $userType => $access) {
+				echo ucfirst($userType) .  ' / ';
+		}
+		?></p>
+		</td>
 					</tr>
 				</table>
 			</div>
