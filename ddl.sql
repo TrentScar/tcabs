@@ -574,9 +574,18 @@ create Procedure TCABSUserCatAssignUserARole(in UserEmail varchar(255), in RoleN
         end if;
         
         if ((select count(*) from UserCat where userType = RoleName and email = UserEmail) >= 1) then
-			-- SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered User already has the assigned Role";
+				 SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered User already has the assigned Role";
+				end if;
+
+         if (RoleName = "student") then 	
+        if ((select count(*) from UserCat where email = UserEmail) >=1) then	
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "User has another managerial role and can not be given the role of student";	
+        end if;	
+        else if ((select count(*) from UserCat where email = UserEmail and usertype = "student") >=1) then	
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "User is a student and can't have a managerial role";
             update UserCat set usertype = RoleName where email = UserEmail;
 		end if;
+end if;
         insert into UserCat values (UserEmail,RoleName);
 	END //
  DELIMITER ;
@@ -1089,6 +1098,7 @@ create Procedure TCABSTeamSetTeamProjectManager(in Teamname varchar(255), in Sup
         update Team set ProjectManager = ProjectManagerUser where Teamid = @ValuesTeamID;
 	END //
  DELIMITER ;
+
 /*
  -- Addteam
  -- adds a supervisor user to a particular team if they are in the offering staff members list
@@ -1103,6 +1113,7 @@ call TCABSTeamAddTeam("Mortal Combat","jsnow@gmail.com","ICT30003", "Semester 1"
 
 -- add Project Manager allocation occurs after adding team members
 */
+
 
                DELIMITER //
 create Procedure TCABSTEAMMEMBERAddTeamMember(in StudentEmail varchar(255),in Teamname varchar(255), in SupervisorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
@@ -1878,6 +1889,7 @@ DELIMITER //
  DELIMITER ;
 
  DELIMITER //
+
 create or replace Procedure TCABSTeamDeleteTeam(in SelectedTeamName varchar(255), in UserEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
 	BEGIN
 
