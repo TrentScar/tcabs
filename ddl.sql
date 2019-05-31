@@ -133,8 +133,6 @@ Create Table Team (
 	FOREIGN KEY (OfferingStaffID) REFERENCES OfferingStaff(OfferingStaffID)
 );
 
-
-
 Create Table TeamProjects(
 	TeamProjectID					int				auto_increment,
 	TeamID							int				not null,
@@ -1169,6 +1167,20 @@ create Procedure TCABSPROJECTROLEAddProjectRole(in EnteredRoleName varchar(255),
 	END //
  DELIMITER ;
  
+                 DELIMITER //
+create Procedure TCABSPROJECTROLESetRoleSalary(in EnteredRoleName varchar(255),in NewEnteredSalary double)
+	BEGIN
+		
+        if ((select count(*) from ProjectRole where Rolename = EnteredRoleName) <> 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Entered Role Does not exist";
+        end if;
+        if (EnteredSalary < 0) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "A Project roles salary can not be negative";
+        end if;
+        update ProjectRole set Salary = NewEnteredSalary where Rolename = EnteredRoleName;
+	END //
+ DELIMITER ;
+ 
                 DELIMITER //
 create Procedure TCABSPROJECTROLESetRoleDescription(in EnteredRoleName varchar(255),in EnteredRoleDesciption text)
 	BEGIN
@@ -1193,6 +1205,7 @@ create Procedure TCABSPROJECTROLESetRoleDescription(in EnteredRoleName varchar(2
   call TCABSProjectRoleAddProjectRole("Developer", 30);
  -- sets Project role description
  call TCABSPROJECTROLESetRoleDescription("Project Manager", "Charged with managing high level group tasks and organisation");
+ call TCABSPROJECTROLESetRoleSalary("Developer", 30.50)
 
 -- needs to change after PHP file development
                DELIMITER //
@@ -1247,9 +1260,28 @@ create Procedure TCABSOFFERINGPROJECTAddProjectOffering(in EnteredProjectName va
         insert OfferingProject (UnitOfferingID,ProjectName) values (@ValuesunitOfferingID,EnteredProjectName);
 	END //
  DELIMITER ;
+ 
+                 DELIMITER //
+create Procedure TCABSOFFERINGPROJECTGetProjectOfferingID(in EnteredProjectName varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255), out ValueProjectOfferingID int)
+	BEGIN
+        call TCABSUNITOFFERINGGetKey(SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @ValuesunitOfferingID);
+       
+        if ((select count(*) from Project where ProjectName = EnteredProjectName) <> 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Entered Project Does not exist";
+        end if;
+        
+        select OfferingProjectID into ValueProjectOfferingID from OfferingProject where UnitOfferingID = @ValuesunitOfferingID and ProjectName = EnteredProjectName;
+        
+        if ValueProjectOfferingID is null then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Entered Project for this offering doesn't exist";
+        end if;
+	END //
+ DELIMITER ;
 -- Project offering
 -- add the Project X to the subject Y in the period of Z for the year of A
 call  TCABSOFFERINGPROJECTAddProjectOffering("Big Test Project","ICT30002", "Semester 1", "2019");
+-- gets the project offering key
+call TCABSOFFERINGPROJECTGetProjectOfferingID("Big Test Project","ICT30002", "Semester 1", "2019", @ValueProjectOfferingID);
 
   DELIMITER //
 create Procedure TCABSTEAMPROJECTAddTeamProject(in EnteredProjectName varchar(255),in TeamName varchar(255), in ConvenorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
@@ -1263,6 +1295,8 @@ create Procedure TCABSTEAMPROJECTAddTeamProject(in EnteredProjectName varchar(25
         if ((select count(*) from Project where ProjectName = EnteredProjectName) <> 1) then
 			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Entered Project Does not exist";
         end if;
+        
+        call TCABSOFFERINGPROJECTGetProjectOfferingID(EnteredProjectName,SelectedUnitCode,SelectedOfferingterm,SelectedOfferingyear,@ValueProjectOfferingID);
         
         insert TeamProjects (TeamID,ProjectName) values (@ValuesTeamID,EnteredProjectName);
 	END //
