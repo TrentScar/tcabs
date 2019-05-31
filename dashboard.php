@@ -54,6 +54,7 @@
 	echo '<br><br>';
  */
 
+	/*
 	// ## TASK ##
 
 	$taskObj = new Task;
@@ -69,13 +70,19 @@
 	$searchQuery = "just a name"; // search bar value may contain TeamName/ProjectName/RoleName
 	print_r($taskObj->searchTask("%{$searchQuery}%")); // print everything
 	echo '<br><br>';
+	*/
 
 	// ## MEETING ##
 
 	$meetingObj = new Meeting;
 
-	echo "adding meeting";
-	$meetingObj->addMeeting("2019-07-14 23:40:00" ,"2019-07-14 23:45:00", "maccas", "just a name", "dtargaryen@gmail.com", "ICT30001", "Semester 2", "2018"); //works
+	//echo "adding meeting";
+	//$meetingObj->addMeeting("2019-07-14 23:40:00" ,"2019-07-14 23:45:00", "maccas", "just a name", "dtargaryen@gmail.com", "ICT30001", "Semester 2", "2018"); //works
+
+	// get Project Role object with all info - using role name
+	echo 'Getting Meeting ID : 1"<br>';
+	print_r($meetingObj->getMeeting("1"));
+	echo '<br><br>';
 ?>
 
 <!DOCTYPE html>

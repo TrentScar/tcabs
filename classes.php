@@ -1329,5 +1329,43 @@
 			$stmt->close();
 		}
 
+		public function getMeeting($meetingID) {
+				
+			$stmt = $GLOBALS['conn']->prepare("SELECT * FROM SupervisorMeeting 
+							WHERE MeetingID = ?");
+			$stmt->bind_result('s', $meetingID);
+
+			$meetingObj = new meeting;
+
+			try {
+				$stmt->execute();
+				$stmt->store_result();
+				$stmt->bind_result($meetingID, $teamID, $agenda, $startTime, 
+							$endTime, $dispTime, $location, $dispLocation, 
+							$meetMinutes, $comments, $approval);
+
+				if($stmt->num_rows > 0) {
+					while($stmt->fetch()) {
+
+						$meetingObj->meetingID = $meetingID;
+						$meetingObj->teamID = $teamID;
+						$meetingObj->agenda = $agenda;
+						$meetingObj->startTime = $startTime;
+						$meetingObj->endTime = $endTime;
+						$meetingObj->dispTime = $dispTime;
+						$meetingObj->location = $location;
+						$meetingObj->dispLocation = $dispLocation;
+						$meetingObj->meetMinutes = $meetMinutes;
+						$meetingObj->comments = $comments;
+						$meetingObj->approval = $approval;
+
+					}
+				} else throw new Exception("Meeting not found!");
+				$stmt->close();
+			} catch(mysqli_sql_exception $e) {
+				throw $e;
+			}
+			return $meetingObj;
+		}
 	}
 ?>
