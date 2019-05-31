@@ -900,4 +900,352 @@
 			return $teams;
 		}
 	}
+	
+	class TeamProject {
+		public $tProjID;
+		public $teamID;
+		public $projName;
+		public $budget;
+
+		// get a single team Project object with use of project name
+		public function getTeamProject($tProjID) {
+	 
+			$stmt = $GLOBALS['conn']->prepare("SELECT * FROM TeamProjects 
+							WHERE TeamProjectID = ?");
+			$stmt->bind_param('s', $tProjID);
+
+			$tProjObj = new TeamProject;
+
+			try {
+				$stmt->execute();
+				$stmt->store_result();
+				$stmt->bind_result($tProjID, $teamID, $projName, $budget);
+
+				if($stmt->num_rows > 0) {
+					while($stmt->fetch()) {
+
+						$tProjObj->tProjID = $projName;
+						$tProjObj->teamID = $teamID;
+						$tProjObj->projName = $projName;
+						$tProjObj->budget = $budget;
+
+					}
+				} else throw new Exception("No Project Found! '{$projName}'");
+				$stmt->close();
+			} catch(mysqli_sql_exception $e) {
+				throw $e;
+			}
+			return $tProjObj;
+		}
+
+		public function searchTeamProject($searchQuery) {
+			
+			$searchResult = array();
+
+			$stmt = $GLOBALS['conn']->prepare("SELECT TP.TeamProjectID, TP.TeamID, T.TeamName, 
+							 	TP.ProjectName, OF.UserName, UO.unitCode, UO.term, UO.year
+								FROM TeamProjects TP INNER JOIN Team T ON TP.teamID = T.teamID
+								INNER JOIN OfferingStaff OF ON OF.OfferingStaffID = T.OfferingStaffID
+								INNER JOIN UnitOffering UO ON UO.unitOfferingID = OF.UnitOfferingID
+								WHERE T.TeamName LIKE ? or TP.ProjectName LIKE ?"
+							);
+
+			$stmt->bind_param('ss', $searchQuery, $searchQuery);
+
+			$teamProjects = [];
+
+			try {
+				$stmt->execute();
+				$stmt->store_result();
+				$stmt->bind_result($teamProjectID, $teamID, $teamName, $projName,
+					$cUserName, $unitCode, $term, $year);
+				$i = 0;
+				if($stmt->num_rows > 0) {
+					while($stmt->fetch()) {
+
+						$teamProjects[$i] = (array)[
+							"teamProjectID" => $teamProjectID,
+							"teamID" => $teamID,
+							"teamName" => $teamName,
+							"projName" => $projName,
+							"cUserName" => $cUserName,
+							"unitCode" => $unitCode,
+							"term" => $term,
+							"year" => $year
+						];
+
+						$i = $i +1;
+					}
+				}
+				$stmt->close();
+			} catch(mysqli_sql_exception $e) {
+				throw $e;
+			}
+			return $teamProjects;
+		}
+
+		// add project to database
+		public function addTeamProject($projName, $tName, $cUserName, $unitCode, $term, $year) {
+	 
+			$stmt = $GLOBALS['conn']->prepare("CALL TCABS_TeamProject_Add(?, ?, ?, ?, ?, ?)");
+			$stmt->bind_param("ssssss", $projName, $tName, $cUserName, $unitCode, $term, $year);
+			
+			try {
+				$stmt->execute();
+			} catch(mysqli_sql_exception $e) {
+				throw $e;
+			}
+			$stmt->close();
+		}
+
+		// stored procedure to be completed
+		/*
+		public function updateTeamProject($tname, $supemail, $unitcode, $term, $year, $nSupEmail, $nTeamName, $projManager) {
+		
+			$stmt = $GLOBALS['conn']->prepare("CALL TCABSUpdateFullTeam(?, ?, ?, ?, ?, ?, ?, ?)");
+			$stmt->bind_param("ssssssss", $tname, $supemail, $unitcode, $term, $year, $nSupEmail, $nTeamName, $projManager);
+			
+			try {
+				$stmt->execute();
+			} catch(mysqli_sql_exception $e) {
+				throw $e;
+			}
+			$stmt->close();
+		}
+	 */
+
+		// stored procedure to be completed
+		/*
+		public function deleteTeamProject($tname, $supemail, $unitcode, $term, $year, $nSupEmail, $nTeamName, $projManager) {
+		
+			$stmt = $GLOBALS['conn']->prepare("CALL TCABSUpdateFullTeam(?, ?, ?, ?, ?, ?, ?, ?)");
+			$stmt->bind_param("ssssssss", $tname, $supemail, $unitcode, $term, $year, $nSupEmail, $nTeamName, $projManager);
+			
+			try {
+				$stmt->execute();
+			} catch(mysqli_sql_exception $e) {
+				throw $e;
+			}
+			$stmt->close();
+		}
+	 */
+	}
+
+	class ProjRole {
+		public $roleName;
+		public $salary;
+		public $roleDesc;
+
+		// get a single project role object with use of ProjectRole name
+		public function getProjRole($projRole) {
+	 
+			$stmt = $GLOBALS['conn']->prepare("SELECT * FROM ProjectRole 
+							WHERE RoleName = ?");
+			$stmt->bind_param('s', $projRole);
+
+			$projRoleObj = new ProjRole;
+
+			try {
+				$stmt->execute();
+				$stmt->store_result();
+				$stmt->bind_result($roleName, $salary, $roleDesc);
+
+				if($stmt->num_rows > 0) {
+					while($stmt->fetch()) {
+
+						$projRoleObj->roleName = $roleName;
+						$projRoleObj->salary = $salary;
+						$projRoleObj->roleDesc = $roleDesc;
+
+					}
+				} else throw new Exception("'{$projRole}' not found!");
+				$stmt->close();
+			} catch(mysqli_sql_exception $e) {
+				throw $e;
+			}
+			return $projRoleObj;
+		}
+
+		// get all project roles
+		public function getAllProjRoles() {
+	 
+			$stmt = $GLOBALS['conn']->prepare("Select * From ProjectRole");
+			
+			$pRoles = [];
+
+			try {
+				$stmt->execute();
+				$stmt->store_result();
+				$stmt->bind_result($roleName, $salary, $roleDesc);
+
+				$i = 0;
+				if($stmt->num_rows > 0) {
+					while($stmt->fetch()) {
+
+						$pRoles[$i] = (array)[
+							"roleName" => $roleName,
+							"salary" => $salary,
+							"roleDesc" => $roleDesc,
+						];
+
+						$i = $i +1;
+					}
+				}
+				$stmt->close();
+			} catch(mysqli_sql_exception $e) {
+				throw $e;
+			}
+			return $pRoles;
+		}
+
+		public function searchProjRole($searchQuery) {
+			
+			$searchResult = array();
+
+			$stmt = $GLOBALS['conn']->prepare("SELECT * FROM ProjectRole 
+								WHERE RoleName LIKE ? or RoleDescription LIKE ?"
+							);
+
+			$stmt->bind_param('ss', $searchQuery, $searchQuery);
+
+			$pRoles = [];
+
+			try {
+				$stmt->execute();
+				$stmt->store_result();
+				$stmt->bind_result($roleName, $salary, $roleDesc);
+
+				$i = 0;
+				if($stmt->num_rows > 0) {
+					while($stmt->fetch()) {
+
+						$pRoles[$i] = (array)[
+							"roleName" => $roleName,
+							"salary" => $salary,
+							"roleDesc" => $roleDesc,
+						];
+
+						$i = $i +1;
+					}
+				}
+				$stmt->close();
+			} catch(mysqli_sql_exception $e) {
+				throw $e;
+			}
+			return $pRoles;
+		}
+
+		// to do update and delete
+		// because no stored procedures
+
+	}
+	
+	public class Task {
+		public $taskID;
+		public $tMemberID;
+		public $teamProjectID;
+		public $roleName;
+		public $tDetails;
+		public $timeTaken;
+		public $logged;
+		public $altered bool;
+
+		public function getTask($tID) {
+				
+			$stmt = $GLOBALS['conn']->prepare("SELECT * FROM Task 
+							WHERE ProjectTaskID = ?");
+			$stmt->bind_param('s', $tID);
+
+			$taskObj = new Task;
+
+			try {
+				$stmt->execute();
+				$stmt->store_result();
+				$stmt->bind_result($taskID, $tMemberID, $teamProjectID, 
+								$roleName, $tDetails, $timeTaken, $logged, $altered);
+
+				if($stmt->num_rows > 0) {
+					while($stmt->fetch()) {
+
+						$taskObj->taskID = $taskID;
+						$taskObj->tMemberID = $tMemberID;
+						$taskObj->teamProjectID = $teamProjectID;
+						$taskObj->roleName = $roleName;
+						$taskObj->tDetails = $tDetails;
+						$taskObj->timeTaken = $timeTaken;
+						$taskObj->logged = $logged;
+						$taskObj->altered = $altered;
+
+					}
+				} else throw new Exception("Task not found!");
+				$stmt->close();
+			} catch(mysqli_sql_exception $e) {
+				throw $e;
+			}
+			return $taskObj;
+		}
+
+		public function getAllTasksByTeam($teamID) {
+	 
+			$stmt = $GLOBALS['conn']->prepare("Select T.ProjectTaskID, T.TeamMemberID,
+								T.TeamProjectID, T.RoleName, T.TaskDetails, T.TimeTaken, T.logged, T.altered
+								TP.ProjectName, TM.TeamName
+								From Task T 
+								INNER JOIN TeamProjects TP ON TP.TeamProjectID = T.TeamProjectID
+								INNER JOIN Team TM ON TP.TeamID = TM.TeamID 
+								WHERE TP.TeamID = ?");
+			
+			$tasks = [];
+
+			try {
+				$stmt->execute();
+				$stmt->store_result();
+				$stmt->bind_result($taskID, $tMemberID, $teamProjectID, 
+								$roleName, $tDetails, $timeTaken, $logged, $altered, 
+								$projName, $teamName);
+
+				$i = 0;
+				if($stmt->num_rows > 0) {
+					while($stmt->fetch()) {
+
+						$tasks[$i] = (array)[
+						"taskID" => $taskID;
+						"tMemberID" => $tMemberID;
+						"teamProjectID" => $teamProjectID;
+						"roleName" => $roleName;
+						"tDetails" => $tDetails;
+						"timeTaken" => $timeTaken;
+						"logged" => $logged;
+						"altered" => $altered;
+						"projName" => $teamName;
+						];
+
+						$i = $i +1;
+					}
+				}
+				$stmt->close();
+			} catch(mysqli_sql_exception $e) {
+				throw $e;
+			}
+			return $tasks;
+		}
+
+		public function addTask($sUserName, $projName, 
+							$teamName, $supUserName, $unitCode, $term, 
+							$year, $time, $taskDesc, $projRole) {
+	 
+			$stmt = $GLOBALS['conn']->prepare("CALL TCABSTASKAddNewTask(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+			$stmt->bind_param("ssssssssss", $sUserName, $projName, 
+							$teamName, $supUserName, $unitCode, $term, 
+							$year, $time, $taskDesc, $projRole);
+			
+			try {
+				$stmt->execute();
+			} catch(mysqli_sql_exception $e) {
+				throw $e;
+			}
+			$stmt->close();
+		}
+
+	}
 ?>

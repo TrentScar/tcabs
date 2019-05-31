@@ -7,9 +7,52 @@
 		header("location: /tcabs/login.php");
 	}
 
-	$projObj = new Project;
-	$projObj = $projObj->getProject("Big Test Project");
-	print_r($projObj);
+	// ##Team Project##
+	$tProjObj = new TeamProject; // make an object of class TeamProject
+
+	// add project to registered team
+	// need - Project Name - TeamName - Convenor - unitCode - term - year
+	echo 'Adding Team Project<br>';
+	$tProjObj->addTeamProject("Big Test Project", "just a name", "dtargaryen@gmail.com", "ICT30001", "Semester 2", "2018");
+
+	// get TeamProject object using TeamProjectID with all info
+	echo 'Getting Team Project ID = 1<br>';
+	print_r($tProjObj->getTeamProject(1));
+	echo '<br><br>';
+
+	// search allocated projects to registered teams
+	echo "Getting Team Project with searchQuery = 'pro'<br>";
+	$searchQuery = "pro"; // search bar value may contain TeamName/ProjectName
+	print_r($tProjObj->searchTeamProject("%{$searchQuery}%")); // print everything
+	echo '<br><br>';
+
+	// ##ProjectRole##
+	$projRoleObj = new ProjRole; // make an object of class ProjRole
+
+	// get Project Role object with all info - using role name
+	echo 'Getting Project Role = "Project Manager"<br>';
+	print_r($projRoleObj->getProjRole("Project Manager"));
+	echo '<br><br>';
+
+	// get all project roles in multi dimensional array
+	echo 'Getting all project roles"<br>';
+	print_r($projRoleObj->getAllProjRoles()); // can be used for dropdown
+	echo '<br><br>';
+
+	// search allocated projects to registered teams
+	echo "Getting all Project roles with searchQuery = 'pro'<br>";
+	$searchQuery = "pro"; // search bar value may contain Role Name/Role Desc
+	print_r($projRoleObj->searchProjRole("%{$searchQuery}%")); // print everything
+	echo '<br><br>';
+
+	/*
+	// add Project Role
+	// need - RoleName - salary - desc
+	echo 'Adding Project Role<br>';
+	print_r($projRoleObj->getProjRole("Project Manager"));
+	echo '<br><br>';
+ */
+
 	// subquery returns more than one row(error)
 	//$uOffObj = new UnitOffering("STA10003");
 	//$uOffObj->addUnitOff("ICT30001", "dtargaryen@gmail.com", "Semester 2", "2019", "2019-05-09");

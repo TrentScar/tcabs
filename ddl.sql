@@ -1340,6 +1340,18 @@ create Procedure TCABSTEAMPROJECTSetProjectBudget(in EnteredProjectBudget double
 	END //
  DELIMITER ;
  
+DELIMITER //
+create Procedure TCABS_TeamProject_Add(in EnteredProjectName varchar(255),in TeamName varchar(255), in ConvenorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
+	BEGIN
+				
+		DECLARE EXIT HANDLER FOR 45000 ROLLBACK;	
+
+ 		START TRANSACTION;	
+			call TCABSTEAMPROJECTAddTeamProject(EnteredProjectName, TeamName, ConvenorEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear);
+		COMMIT;	
+	END //
+ DELIMITER ;
+
 /*
 -- team projects
 -- the project X is allocated to the team called Y which has the supervisor with the email Z. The team is in the subject A for the period of B for the year of C
@@ -1352,8 +1364,7 @@ call TCABSTEAMPROJECTSetProjectBudget(36000,"Big Test Project","testTeam2", "dta
 call TCABSTEAMPROJECTSetProjectBudget(10,"Big Test Project","besttestTeam", "dtargaryen@gmail.com","ICT30002", "Semester 1", "2019");
 */
 
-
-                DELIMITER //
+DELIMITER //
 create Procedure TCABSTASKAddNewTask(in StudentEmail varchar(255),in ProjectName varchar(255),in Teamname varchar(255), in SupervisorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255), in MinuteTime int, in Taskdescription text, in EnteredRoleName varchar(255))
 	BEGIN
 		Declare varProjectTaskID int;
