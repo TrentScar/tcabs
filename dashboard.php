@@ -7,6 +7,13 @@
 		header("location: /tcabs/login.php");
 	}
 
+	// similarly team - teamMember - Project - classes are alos done 
+	// find functions to use in classes.php
+	// as of now classes regarding Peer Assessments are left
+	// till then you can use these to complete convenor functions
+
+	// IF YOU NEED ANYTHING ELSE PLEASE SHOOT A MESSAGE ON SLACK
+	
 	/*
 	// ##Team Project##
 	$tProjObj = new TeamProject; // make an object of class TeamProject
@@ -74,15 +81,48 @@
 
 	// ## MEETING ##
 
+	/*
 	$meetingObj = new Meeting;
 
-	//echo "adding meeting";
-	//$meetingObj->addMeeting("2019-07-14 23:40:00" ,"2019-07-14 23:45:00", "maccas", "just a name", "dtargaryen@gmail.com", "ICT30001", "Semester 2", "2018"); //works
+	echo "adding meeting";
+	$meetingObj->addMeeting("2019-07-14 23:40:00" ,"2019-07-14 23:45:00", "maccas", "just a name", "dtargaryen@gmail.com", "ICT30001", "Semester 2", "2018"); //works
 
 	// get Project Role object with all info - using role name
 	echo 'Getting Meeting ID : 1"<br>';
 	print_r($meetingObj->getMeeting("1"));
 	echo '<br><br>';
+
+	// search meeting
+	echo "searchQuery = 'dtargaryen@gmail.com'<br>";
+	$searchQuery = "dtargaryen@gmail.com"; // search bar value may contain Team Name or supervisor username
+	print_r($meetingObj->searchMeeting("%{$searchQuery}%")); // print everything
+	echo '<br><br>';
+
+	// delete meeting
+	echo 'Deleting above meeting<br>';
+	$meetingObj->deleteMeeting("2019-07-14 23:40:00", "just a name", "dtargaryen@gmail.com", "ICT30001", "Semester 2", "2018");
+
+	// update to do
+	*/
+
+	// ## Meeting Attendees ##
+
+	/*
+	$attendeeObj = new MeetingAttendee;
+
+	echo "adding attendee<br>";
+	$attendeeObj->addAttendee("astark@gmail.com", "2019-07-14 23:40:00", "just a name", "dtargaryen@gmail.com", "ICT30001", "Semester 2", "2018"); //works
+
+	echo "getting attendee<br>";
+	print_r($attendeeObj->getAttendee("1")); // get by attendee ID
+
+	// search attendee
+	echo "searchQuery = 'just a name'<br>";
+	$searchQuery = "just a name"; // search bar value may contain Team name
+	print("<pre>".print_r($attendeeObj->searchAttendee("%{$searchQuery}%"), 1)."</pre>"); // print everything
+	echo '<br><br>';
+	*/
+	
 ?>
 
 <!DOCTYPE html>

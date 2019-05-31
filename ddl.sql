@@ -1499,10 +1499,12 @@ call TCABSSUPERVISORMEETINGGetMeetingKey('2019-07-14 23:40:00',"testTeam2","dtar
                   DELIMITER //
 create Procedure TCABSMEETINGATTENDIEESAddAttendiee(in StudentEmail Varchar(255),in EnteredStartTime datetime, in Teamname varchar(255), in SupervisorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
 	BEGIN
+		DECLARE EXIT HANDLER FOR 45000 ROLLBACK;	
         call TCABSSUPERVISORMEETINGGetMeetingKey(EnteredStartTime,Teamname,SupervisorEmail,SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear,@ValueSuppervisorMeetingKey);
         call TCABSTEAMMEMBERGetTeamMember(StudentEmail,Teamname,SupervisorEmail,SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @ValueTeamMemberID);
 		
         insert into MeetingAttendees(TeamMemberID,MeetingID) values (@ValueTeamMemberID,@ValueSuppervisorMeetingKey);
+		COMMIT;
 END //
  DELIMITER ;
  
