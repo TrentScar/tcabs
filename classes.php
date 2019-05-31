@@ -1153,7 +1153,7 @@
 
 	}
 	
-	class Task {
+		class Task {
 		public $taskID;
 		public $tMemberID;
 		public $teamProjectID;
@@ -1162,6 +1162,13 @@
 		public $timeTaken;
 		public $logged;
 		public $altered;
+
+		public $projName;
+		public $teamName;
+		public $supEmail;
+		public $uCode;
+		public $term;
+		public $year;
 
 		public function getTask($tID) {
 				
@@ -1297,7 +1304,8 @@
 							"timeTaken" => $timeTaken,
 							"logged" => $logged,
 							"altered" => $altered,
-							"projName" => $teamName
+							"projName" => $projName,
+							"teamName" => $teamName
 						];
 
 						$i = $i +1;
@@ -1309,8 +1317,21 @@
 			}
 			return $tasks;
 		}
+		
+		public function updateTask($taskID, $projName, $teamName, $supEmail, $uCode, $term, $year, $timeTaken, $roleName) {
+		
+			$stmt = $GLOBALS['conn']->prepare("CALL TCABSTASKSModifyTask(?, ?, ?, ?, ?, ?, ?, ?, ?)");
+			$stmt->bind_param("sssssssss", $taskID, $projName, $teamName, $supEmail, $uCode, $term, $year, $timeTaken, $roleName);
+			
+			try {
+				$stmt->execute();
+			} catch(mysqli_sql_exception $e) {
+				throw $e;
+			}
+			$stmt->close();
+		}
 
-		// to do update and delete
+		// to do delete
 		// because no stored procedures
 	}
 
