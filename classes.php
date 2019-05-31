@@ -676,6 +676,19 @@
 			}
 			$stmt->close();
 		}
+		
+		public function deleteTeamMember($sEmail, $tName, $supEmail, $unitCode, $term, $year) {
+		
+			$stmt = $GLOBALS['conn']->prepare("CALL TCABSTEAMMEMBERDeleteTeamMember(?, ?, ?, ?, ?, ?)");
+			$stmt->bind_param("ssssss", $sEmail, $tName, $supEmail, $unitCode, $term, $year);
+			
+			try {
+				$stmt->execute();
+			} catch(mysqli_sql_exception $e) {
+				throw $e;
+			}
+			$stmt->close();
+		}
 	}
 
 	class Team {
@@ -776,10 +789,10 @@
 			return $teams;
 		}
 
-		public function updateTeam($tname, $supemail, $unitcode, $term, $year, $nSupEmail, $nTeamName, $projManager) {
+		public function updateTeam($tname, $supemail, $unitcode, $term, $year, $nsup, $nname, $projman) {
 		
 			$stmt = $GLOBALS['conn']->prepare("CALL TCABSUpdateFullTeam(?, ?, ?, ?, ?, ?, ?, ?)");
-			$stmt->bind_param("ssssssss", $tname, $supemail, $unitcode, $term, $year, $nSupEmail, $nTeamName, $projManager);
+			$stmt->bind_param("ssssssss", $tname, $supemail, $unitcode, $term, $year, $nsup, $nname, $projman);
 			
 			try {
 				$stmt->execute();
