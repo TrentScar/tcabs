@@ -1380,5 +1380,18 @@
 			}
 			return $meetingObj;
 		}
+		
+		public function deleteMeeting($startTime, $teamName, $supUserName, $unitCode, $term, $year) {
+		
+			$stmt = $GLOBALS['conn']->prepare("CALL TCABSSUPERVISORMEETINGDeleteMeeting(?, ?, ?, ?, ?, ?)");
+			$stmt->bind_param("ssssss", $startTime, $teamName, $supUserName, $unitCode, $term, $year);
+			
+			try {
+				$stmt->execute();
+			} catch(mysqli_sql_exception $e) {
+				throw $e;
+			}
+			$stmt->close();
+		}
 	}
 ?>
