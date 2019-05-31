@@ -1140,7 +1140,7 @@
 
 	}
 	
-	public class Task {
+	class Task {
 		public $taskID;
 		public $tMemberID;
 		public $teamProjectID;
@@ -1148,7 +1148,7 @@
 		public $tDetails;
 		public $timeTaken;
 		public $logged;
-		public $altered bool;
+		public $altered;
 
 		public function getTask($tID) {
 				
@@ -1188,7 +1188,7 @@
 		public function getAllTasksByTeam($teamID) {
 	 
 			$stmt = $GLOBALS['conn']->prepare("Select T.ProjectTaskID, T.TeamMemberID,
-								T.TeamProjectID, T.RoleName, T.TaskDetails, T.TimeTaken, T.logged, T.altered
+								T.TeamProjectID, T.RoleName, T.TaskDetails, T.TimeTaken, T.logged, T.altered, 
 								TP.ProjectName, TM.TeamName
 								From Task T 
 								INNER JOIN TeamProjects TP ON TP.TeamProjectID = T.TeamProjectID
@@ -1209,15 +1209,16 @@
 					while($stmt->fetch()) {
 
 						$tasks[$i] = (array)[
-						"taskID" => $taskID;
-						"tMemberID" => $tMemberID;
-						"teamProjectID" => $teamProjectID;
-						"roleName" => $roleName;
-						"tDetails" => $tDetails;
-						"timeTaken" => $timeTaken;
-						"logged" => $logged;
-						"altered" => $altered;
-						"projName" => $teamName;
+							"taskID" => $taskID,
+							"tMemberID" => $tMemberID,
+							"teamProjectID" => $teamProjectID,
+							"roleName" => $roleName,
+							"tDetails" => $tDetails,
+							"timeTaken" => $timeTaken,
+							"logged" => $logged,
+							"altered" => $altered,
+							"projName" => $projName,
+							"teamName" => $teamName
 						];
 
 						$i = $i +1;
@@ -1246,6 +1247,91 @@
 			}
 			$stmt->close();
 		}
+
+		public function searchTask($searchQuery) {
+			
+			$searchResult = array();
+
+			$stmt = $GLOBALS['conn']->prepare("Select T.ProjectTaskID, T.TeamMemberID,
+								T.TeamProjectID, T.RoleName, T.TaskDetails, T.TimeTaken, T.logged, T.altered, 
+								TP.ProjectName, TM.TeamName
+								From Task T 
+								INNER JOIN TeamProjects TP ON TP.TeamProjectID = T.TeamProjectID
+								INNER JOIN Team TM ON TP.TeamID = TM.TeamID 
+								WHERE TM.TeamName LIKE ? or TP.ProjectName LIKE ? or T.RoleName LIKE ?");
+
+			$stmt->bind_param('sss', $searchQuery, $searchQuery, $searchQuery);
+
+			$tasks = [];
+
+			try {
+				$stmt->execute();
+				$stmt->store_result();
+				$stmt->bind_result($taskID, $tMemberID, $teamProjectID, 
+								$roleName, $tDetails, $timeTaken, $logged, $altered, 
+								$projName, $teamName);
+
+				$i = 0;
+				if($stmt->num_rows > 0) {
+					while($stmt->fetch()) {
+
+						$tasks[$i] = (array)[
+							"taskID" => $taskID,
+							"tMemberID" => $tMemberID,
+							"teamProjectID" => $teamProjectID,
+							"roleName" => $roleName,
+							"tDetails" => $tDetails,
+							"timeTaken" => $timeTaken,
+							"logged" => $logged,
+							"altered" => $altered,
+							"projName" => $teamName
+						];
+
+						$i = $i +1;
+					}
+				}
+				$stmt->close();
+			} catch(mysqli_sql_exception $e) {
+				throw $e;
+			}
+			return $tasks;
+		}
+
+		// to do update and delete
+		// because no stored procedures
+	}
+
+	class Meeting {
+		public $meetingID;
+		public $teamID;
+		public $agenda;
+		public $startTime;
+		public $endTime;
+		public $dispTime;
+		public $location;
+		public $dispLocation;
+		public $meetMinutes;
+		public $comments;
+		public $approval;
+
+		/*
+		public function addMeeting($sUserName, $projName, 
+							$teamName, $supUserName, $unitCode, $term, 
+							$year, $time, $taskDesc, $projRole) {
+	 
+			$stmt = $GLOBALS['conn']->prepare("CALL TCABSTASKAddNewTask(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+			$stmt->bind_param("ssssssssss", $sUserName, $projName, 
+							$teamName, $supUserName, $unitCode, $term, 
+							$year, $time, $taskDesc, $projRole);
+			
+			try {
+				$stmt->execute();
+			} catch(mysqli_sql_exception $e) {
+				throw $e;
+			}
+			$stmt->close();
+		}
+		 */
 
 	}
 ?>

@@ -7,6 +7,7 @@
 		header("location: /tcabs/login.php");
 	}
 
+	/*
 	// ##Team Project##
 	$tProjObj = new TeamProject; // make an object of class TeamProject
 
@@ -53,21 +54,22 @@
 	echo '<br><br>';
  */
 
-	// subquery returns more than one row(error)
-	//$uOffObj = new UnitOffering("STA10003");
-	//$uOffObj->addUnitOff("ICT30001", "dtargaryen@gmail.com", "Semester 2", "2019", "2019-05-09");
+	// ## TASK ##
 
-	/* not relevant now
-	if($_SERVER['REQUEST_METHOD'] == 'POST') {
-		$_SESSION['logged_in'] = FALSE;	
-		header("location: login.php");
-		exit();
-	}	else if($_SESSION['logged_in'] == TRUE) {
-		if($_SERVER['REQUEST_METHOD'] == 'POST') {
-			//require("signup.php");
-		}
-	}
-	 */
+	$taskObj = new Task;
+
+	// add Task
+	// error due to error in wrong table link in ERD
+	//$taskObj->addTask("astark@gmail.com", "Big Test Project", "just a name", 
+	//				"dtargaryen@gmail.com", "ICT30001", "Semester 2", "2018", "1", 
+	//				"task desc", "Developer");
+
+	// search task
+	echo "searchQuery = 'just a name'<br>";
+	$searchQuery = "just a name"; // search bar value may contain TeamName/ProjectName/RoleName
+	print_r($taskObj->searchTask("%{$searchQuery}%")); // print everything
+	echo '<br><br>';
+
 ?>
 
 <!DOCTYPE html>
