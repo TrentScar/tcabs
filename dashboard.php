@@ -70,6 +70,12 @@
 	print_r($taskObj->searchTask("%{$searchQuery}%")); // print everything
 	echo '<br><br>';
 
+	// ## MEETING ##
+
+	$meetingObj = new Meeting;
+
+	echo "adding meeting";
+	$meetingObj->addMeeting("2019-07-14 23:40:00" ,"2019-07-14 23:45:00", "maccas", "just a name", "dtargaryen@gmail.com", "ICT30001", "Semester 2", "2018"); //works
 ?>
 
 <!DOCTYPE html>

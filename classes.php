@@ -1314,15 +1314,12 @@
 		public $comments;
 		public $approval;
 
-		/*
-		public function addMeeting($sUserName, $projName, 
-							$teamName, $supUserName, $unitCode, $term, 
-							$year, $time, $taskDesc, $projRole) {
+		public function addMeeting($startTime, $endTime, $location, 
+						$teamName, $supUserName, $unitCode, $term, $year) {
 	 
-			$stmt = $GLOBALS['conn']->prepare("CALL TCABSTASKAddNewTask(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-			$stmt->bind_param("ssssssssss", $sUserName, $projName, 
-							$teamName, $supUserName, $unitCode, $term, 
-							$year, $time, $taskDesc, $projRole);
+			$stmt = $GLOBALS['conn']->prepare("CALL TCABSSUPERVISORMEETINGAddMeeting(?, ?, ?, ?, ?, ?, ?, ?)");
+			$stmt->bind_param("ssssssss", $startTime, $endTime, $location, 
+						$teamName, $supUserName, $unitCode, $term, $year);
 			
 			try {
 				$stmt->execute();
@@ -1331,7 +1328,6 @@
 			}
 			$stmt->close();
 		}
-		 */
 
 	}
 ?>

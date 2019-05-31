@@ -1449,7 +1449,7 @@ create Procedure TCABSSUPERVISORMEETINGCheckForConflicts(in EnteredStartTime dat
         DROP TABLE IF EXISTS `Supervisoroffers`;
         create temporary table Supervisoroffers
         select * from SupervisorMeeting natural join Team; 
-        if ((select count(*) from Supervisoroffers natural join offeringstaff where 
+        if ((select count(*) from Supervisoroffers natural join OfferingStaff where 
         username = SupervisorEmail and ((StartTime <= EnteredStartTime and EnteredStartTime <= EndTime) 
         or (EndTime >= EnteredEndTime and EnteredEndTime >= StartTime))) >= 1) then
 			drop temporary table Supervisoroffers;
