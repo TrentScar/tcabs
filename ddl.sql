@@ -116,7 +116,7 @@ CREATE TABLE Enrolment (
 
  CREATE TABLE OfferingStaff (
 	OfferingStaffID			int				auto_increment,
-  UserName				VARCHAR(255)	NOT NULL,
+    UserName				VARCHAR(255)	NOT NULL,
 	UnitOfferingID			int				NOT NULL,
 	PRIMARY KEY (OfferingStaffID),
     FOREIGN KEY (UserName) REFERENCES Users(email),
@@ -132,8 +132,6 @@ Create Table Team (
 	PRIMARY KEY (TeamID),
 	FOREIGN KEY (OfferingStaffID) REFERENCES OfferingStaff(OfferingStaffID)
 );
-
-
 
 Create Table TeamProjects(
 	TeamProjectID					int				auto_increment,
@@ -263,12 +261,15 @@ INSERT INTO tcabs.UserCat VALUES ("jsnow@gmail.com", "admin");
 INSERT INTO tcabs.UserCat VALUES ("astark@gmail.com", "admin");
 INSERT INTO tcabs.UserCat VALUES ("astark1@gmail.com", "admin");
 
+
 INSERT INTO tcabs.UnitOffering VALUES (1, "ICT30001", "dtargaryen@gmail.com", "Semester 2", "2018", "2018-06-05");
 
-INSERT INTO tcabs.Enrolment VALUES("1", "1", "astark@gmail.com");
-INSERT INTO tcabs.OfferingStaff VALUES ("1", "dtargaryen@gmail.com", "1");
-INSERT INTO tcabs.Team VALUES ("1", "just a name", "1", "asdf");
-INSERT INTO tcabs.TeamMember VALUES("213213", "1", "1");
+/*
+INSERT INTO tcabs.Enrolment VALUES (1, 1, "dtargaryen@gmail.com");
+
+INSERT INTO tcabs.Functions VALUES (1, "TCABSUSERCreateNewUser");
+*/
+
 
 delimiter $$
 create PROCEDURE TCABSAuthenticateEmail(in Email varchar (255))
@@ -406,23 +407,6 @@ CREATE PROCEDURE TCABS_User_register(IN fName VARCHAR(255), IN lName VARCHAR(255
 
 		START TRANSACTION;
 			CALL tcabs.TCABSUSERCreateNewUser(email , pwd);
-			CALL tcabs.TCABSUSERSetUserFirstName(email, fName);
-			CALL tcabs.TCABSUSERSetUserLastName(email, lName);
-			CALL tcabs.TCABSUSERSetUserGender(email, gender);
-			CALL tcabs.TCABSUSERSetUserPhone(email, pNum);
-			-- confused about the procedure below
-			-- CALL TCABSUserCatAssignUserARole(email, uRole);
-		COMMIT;
-	END// 
-DELIMITER ;
-
-DELIMITER //
-CREATE PROCEDURE TCABS_User_Update(IN fName VARCHAR(255), IN lName VARCHAR(255), IN gender VARCHAR(20), IN pNum VARCHAR(255), IN usrEmail VARCHAR(255)) 
-	BEGIN
-		DECLARE EXIT HANDLER FOR 45000 ROLLBACK;
-
-		START TRANSACTION;
-			-- CALL tcabs.TCABSUSERCreateNewUser(email , pwd); Since we are only updating we don't need this - ssavage 29 05 2019 
 			CALL tcabs.TCABSUSERSetUserFirstName(email, fName);
 			CALL tcabs.TCABSUSERSetUserLastName(email, lName);
 			CALL tcabs.TCABSUSERSetUserGender(email, gender);
@@ -574,18 +558,18 @@ create Procedure TCABSUserCatAssignUserARole(in UserEmail varchar(255), in RoleN
         end if;
         
         if ((select count(*) from UserCat where userType = RoleName and email = UserEmail) >= 1) then
-				 SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered User already has the assigned Role";
-				end if;
-
-         if (RoleName = "student") then 	
-        if ((select count(*) from UserCat where email = UserEmail) >=1) then	
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "User has another managerial role and can not be given the role of student";	
-        end if;	
-        else if ((select count(*) from UserCat where email = UserEmail and usertype = "student") >=1) then	
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "User is a student and can't have a managerial role";
-            update UserCat set usertype = RoleName where email = UserEmail;
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered User already has the assigned Role";
 		end if;
-end if;
+        
+        if (RoleName = "student") then 
+        if ((select count(*) from UserCat where email = UserEmail) >=1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "User has another managerial role and can not be given the role of student";
+        end if;
+        else if ((select count(*) from UserCat where email = UserEmail and usertype = "student") >=1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "User is a student and can't have a managerial role";
+		end if;
+        end if;
+        
         insert into UserCat values (UserEmail,RoleName);
 	END //
  DELIMITER ;
@@ -779,19 +763,6 @@ create Procedure TCABSENROLMENTGetEnrolKey(in EnroledUser varchar(255),in Select
          end if;
 	END //
  DELIMITER ;
-
-DELIMITER //	
-CREATE PROCEDURE TCABS_enrolment_add(in NewEnrolUser varchar(255),in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))	
-	BEGIN	
-		-- I keep getting error -subquery returns more than one row	
-		DECLARE EXIT HANDLER FOR 45000 ROLLBACK;	
-
- 		START TRANSACTION;	
-			CALL TCABSENROLMENTAddNewEnrolment(NewEnrolUser, SelectedUnitCode, SelectedOfferingTerm, SelectedOfferingyear);	
-		COMMIT;	
-	END// 	
-DELIMITER ;
-
  -- Create Enrolment 
  -- creates a new Enrolment record using User Email, Unit code, offering term, offering year. returns an error is a filled offering census date is passed by system clock
  call TCABSENROLMENTAddNewEnrolment("Example@hotmail.com","ICT30002", "Semester 1", "2019");
@@ -839,20 +810,20 @@ create Procedure TCABSTEACHINGPERIODCreateNewPeriod(in NewTerm varchar(255), in 
         end if;
         call TCABSValidateDate(NewStartDate);
         call TCABSValidateDate(NewEndDate);
-        if ((select count(*) from TeachingPeriod where term = NewTerm and year = year(STR_TO_DATE(NewStartDate, '%Y-%m-%d'))) >= 1) then
+        if ((select count(*) from teachingperiod where term = NewTerm and year = year(STR_TO_DATE(NewStartDate, '%Y-%m-%d'))) >= 1) then
 			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "That term name and startdate year already exists";
         end if;
         if (STR_TO_DATE(NewStartDate, '%Y-%m-%d') >= STR_TO_DATE(NewEndDate, '%Y-%m-%d')) then
 			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Enddate cannot occur on or before Start date";
         end if;
         
-        insert into TeachingPeriod values (NewTerm, year(STR_TO_DATE(NewStartDate, '%Y-%m-%d')), STR_TO_DATE(NewStartDate, '%Y-%m-%d'), STR_TO_DATE(NewEndDate, '%Y-%m-%d'));
+        insert into teachingperiod values (NewTerm, year(STR_TO_DATE(NewStartDate, '%Y-%m-%d')), STR_TO_DATE(NewStartDate, '%Y-%m-%d'), STR_TO_DATE(NewEndDate, '%Y-%m-%d'));
         
 	END //
  DELIMITER ;
  -- creating a teaching period
  -- this is to enact the creation of a new period by entering the name of the new period entering the start date and end date (the year column stored in the table is the year of the start date)
--- call TCABSTEACHINGPERIODCreateNewPeriod("Semester 3","2020-3-1","2021-2-2");
+ call TCABSTEACHINGPERIODCreateNewPeriod("Semester 3","2020-3-1","2021-2-2");
  
             DELIMITER //
 create Procedure TCABSUSERROLEEnterNewRole(in RoleName varchar(255))
@@ -906,7 +877,7 @@ create Procedure TCABSPERMISSIONAddPermission(in RoleName varchar(255), in Funct
              DELIMITER //
 create function TCABSDateValiadationCheckUnitOfferingVsSystem(SelectedOfferingterm varchar(255), SelectedOfferingyear varchar(255)) returns bool
 	BEGIN
-		if((select EndDate from TeachingPeriod where term = SelectedOfferingterm and year = SelectedOfferingyear) < sysdate()) then
+		if((select EndDate from teachingperiod where term = SelectedOfferingterm and year = SelectedOfferingyear) < sysdate()) then
 			return true;
 		else
 			return false;
@@ -937,11 +908,11 @@ create Procedure TCABSOFFERINGSTAFFAddOfferingStaff(in UserEmail varchar(255), i
 			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "you can not add a staff member to a unit which has already concluded";
         end if;
         
-        if ((select count(*) from OfferingStaff where Username = UserEmail and UnitOfferingID = @ValuesunitOfferingID) >= 1) then
+        if ((select count(*) from Offeringstaff where Username = UserEmail and UnitOfferingID = @ValuesunitOfferingID) >= 1) then
 			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered User has already has been assigned as a staff member to this unit";
 		end if;
         
-        insert into OfferingStaff(Username,UnitOfferingID) values (UserEmail,@ValuesunitOfferingID);
+        insert into Offeringstaff(Username,UnitOfferingID) values (UserEmail,@ValuesunitOfferingID);
 	END //
  DELIMITER ;
  
@@ -960,7 +931,7 @@ create Procedure TCABSOFFERINGSTAFFGetOfferingStaffKey(in UserEmail varchar(255)
         
         call TCABSUNITOFFERINGGetKey(SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @ValuesunitOfferingID);
         
-        select OfferingStaffID into ValueOfferingStaff from OfferingStaff where Username = UserEmail and UnitOfferingID = @ValuesunitOfferingID;
+        select OfferingStaffID into ValueOfferingStaff from Offeringstaff where Username = UserEmail and UnitOfferingID = @ValuesunitOfferingID;
         
          if (ValueOfferingStaff is null) then
 			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered User Email and unit offering combination does not exist";
@@ -969,7 +940,7 @@ create Procedure TCABSOFFERINGSTAFFGetOfferingStaffKey(in UserEmail varchar(255)
  DELIMITER ;
  -- TCABS OfferingStaff
  -- registors user into specified offering
--- call TCABSOFFERINGSTAFFAddOfferingStaff("dtargaryen@gmail.com","ICT30002", "Semester 1", "2019");
+ call TCABSOFFERINGSTAFFAddOfferingStaff("dtargaryen@gmail.com","ICT30002", "Semester 1", "2019");
  call TCABSOFFERINGSTAFFAddOfferingStaff("jsnow@gmail.com","ICT30002", "Semester 1", "2019");
   call TCABSOFFERINGSTAFFAddOfferingStaff("dtargaryen@gmail.com","ICT30003", "Semester 1", "2019");
   call TCABSOFFERINGSTAFFAddOfferingStaff("Best@Supervisor.com","ICT30003", "Semester 1", "2019");
@@ -1028,7 +999,7 @@ create Procedure TCABSTeamAddTeam(in NewTeamName varchar(255), in UserEmail varc
 			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "User Is not a supervisor and can't be assigned to a team";
         end if;
         call TCABSOFFERINGSTAFFGetOfferingStaffKey(UserEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear,@ValueOfferingStaff);
-        if ((select count(*) from Team where OfferingStaffID = @ValueOfferingStaff and TeamName = NewTeamName) >= 1) then
+        if ((select count(*) from team where OfferingStaffID = @ValueOfferingStaff and TeamName = NewTeamName) >= 1) then
 			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered User has already has been assigned as the supervisor of the team with the entered name";
 		end if;
         if (TCABSDateValiadationCheckUnitOfferingVsSystem(SelectedOfferingterm,SelectedOfferingyear)) then
@@ -1070,7 +1041,7 @@ create Procedure TCABSTeamGetTeamKey(in EnteredTeamname varchar(255), in UserEma
         end if;
         
         call TCABSOFFERINGSTAFFGetOfferingStaffKey(UserEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear,@ValueOfferingStaff);
-        select TeamID into ValuesTeamID from Team where OfferingStaffID = @ValueOfferingStaff and TeamName = EnteredTeamname;
+        select TeamID into ValuesTeamID from team where OfferingStaffID = @ValueOfferingStaff and TeamName = EnteredTeamname;
         
         if (ValuesTeamID is null) then
 			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Unknown team name and Staff offering combination ";
@@ -1098,29 +1069,23 @@ create Procedure TCABSTeamSetTeamProjectManager(in Teamname varchar(255), in Sup
         update Team set ProjectManager = ProjectManagerUser where Teamid = @ValuesTeamID;
 	END //
  DELIMITER ;
-
-/*
  -- Addteam
  -- adds a supervisor user to a particular team if they are in the offering staff members list
-call TCABSTeamAddTeam("testTeam","jsnow@gmail.com","ICT30002", "Semester 1", "2019");
+call TCABSTeamAddTeam("testTeam","dtargaryen@gmail.com","ICT30002", "Semester 1", "2019");
 -- allows for allocation of team name
-call TCABSTeamSetTeamName("testTeam","jsnow@gmail.com","ICT30002", "Semester 1", "2019","testTeam2");
+call TCABSTeamSetTeamName("testTeam","dtargaryen@gmail.com","ICT30002", "Semester 1", "2019","testTeam2");
 -- this procedure is mainly used in other procedures and performs no actions that change tables
-call TCABSTeamGetTeamKey("testTeam2", "jsnow@gmail.com","ICT30002", "Semester 1", "2019", @ValuesTeamID);
+call TCABSTeamGetTeamKey("testTeam2", "dtargaryen@gmail.com","ICT30002", "Semester 1", "2019", @ValuesTeamID);
 
-call TCABSTeamAddTeam("BesttestTeam","jsnow@gmail.com","ICT30002", "Semester 1", "2019");
-call TCABSTeamAddTeam("Mortal Combat","jsnow@gmail.com","ICT30003", "Semester 1", "2019");
+call TCABSTeamAddTeam("BesttestTeam","dtargaryen@gmail.com","ICT30002", "Semester 1", "2019");
+call TCABSTeamAddTeam("Mortal Combat","dtargaryen@gmail.com","ICT30003", "Semester 1", "2019");
 
 -- add Project Manager allocation occurs after adding team members
-*/
-
 
                DELIMITER //
 create Procedure TCABSTEAMMEMBERAddTeamMember(in StudentEmail varchar(255),in Teamname varchar(255), in SupervisorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
 	BEGIN
-
 		declare StoredEnrolmentID int;
-		DECLARE EXIT HANDLER FOR 45000 ROLLBACK;	
 		if (char_length(StudentEmail) < 1) then
 			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no Student Email entered";
         end if;
@@ -1148,6 +1113,7 @@ create Procedure TCABSTEAMMEMBERAddTeamMember(in StudentEmail varchar(255),in Te
 			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "you can not add a team member to a unit which has already concluded";
         end if;
         
+        
         call TCABSENROLMENTGetEnrolKey(StudentEmail,SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @ValueEnrolID);
         
         call TCABSTeamGetTeamKey(Teamname,SupervisorEmail,SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @ValuesTeamID);
@@ -1156,8 +1122,6 @@ create Procedure TCABSTEAMMEMBERAddTeamMember(in StudentEmail varchar(255),in Te
 			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered team to assign to a student already has the max of 6 team members";
         end if;
         insert into TeamMember(EnrolmentID,TeamID) values (@ValueEnrolID,@ValuesTeamID);
-
-				COMMIT;
         
 	END //
  DELIMITER ;
@@ -1177,7 +1141,6 @@ create Procedure TCABSTEAMMEMBERGetTeamMember(in StudentEmail varchar(255),in Te
         
 	END //
  DELIMITER ;
-/*
  -- add student user X to the team called Y with the supervisor user Z which is enroled in the subject A in the period of B for the year of C 
 call TCABSTEAMMEMBERAddTeamMember("Example@hotmail.com","testTeam2","dtargaryen@gmail.com","ICT30002", "Semester 1", "2019");
 call TCABSTEAMMEMBERAddTeamMember("BestExample@hotmail.com","BesttestTeam","dtargaryen@gmail.com","ICT30002", "Semester 1", "2019");
@@ -1188,7 +1151,6 @@ call TCABSTEAMMEMBERGetTeamMember("Example@hotmail.com","testTeam2","dtargaryen@
 
 call TCABSTeamSetTeamProjectManager("testTeam2","dtargaryen@gmail.com","ICT30002", "Semester 1", "2019","Example@hotmail.com");
 call TCABSTeamSetTeamProjectManager("BesttestTeam","dtargaryen@gmail.com","ICT30002", "Semester 1", "2019","bestExample@hotmail.com");
-*/
 
                DELIMITER //
 create Procedure TCABSPROJECTROLEAddProjectRole(in EnteredRoleName varchar(255),in EnteredSalary double)
@@ -1202,6 +1164,20 @@ create Procedure TCABSPROJECTROLEAddProjectRole(in EnteredRoleName varchar(255),
 			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Entered Role already exists";
         end if;
         insert into ProjectRole (Rolename,Salary) values (EnteredRoleName,EnteredSalary);
+	END //
+ DELIMITER ;
+ 
+                 DELIMITER //
+create Procedure TCABSPROJECTROLESetRoleSalary(in EnteredRoleName varchar(255),in NewEnteredSalary double)
+	BEGIN
+		
+        if ((select count(*) from ProjectRole where Rolename = EnteredRoleName) <> 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Entered Role Does not exist";
+        end if;
+        if (EnteredSalary < 0) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "A Project roles salary can not be negative";
+        end if;
+        update ProjectRole set Salary = NewEnteredSalary where Rolename = EnteredRoleName;
 	END //
  DELIMITER ;
  
@@ -1229,6 +1205,7 @@ create Procedure TCABSPROJECTROLESetRoleDescription(in EnteredRoleName varchar(2
   call TCABSProjectRoleAddProjectRole("Developer", 30);
  -- sets Project role description
  call TCABSPROJECTROLESetRoleDescription("Project Manager", "Charged with managing high level group tasks and organisation");
+ call TCABSPROJECTROLESetRoleSalary("Developer", 30.50)
 
 -- needs to change after PHP file development
                DELIMITER //
@@ -1261,19 +1238,6 @@ create Procedure TCABSPROJECTSetProjectDescription(in EnteredProjectName varchar
         update Project set ProjectDescription = EnteredProjectDescription where ProjectName = EnteredProjectName;
 	END //
  DELIMITER ;
-
-DELIMITER //
-create Procedure TCABS_Project_Add(in EnteredProjectName varchar(255), in EnteredProjectDescription text)
-	BEGIN
-				
-		DECLARE EXIT HANDLER FOR 45000 ROLLBACK;	
-
- 		START TRANSACTION;	
-			call TCABSPROJECTAddProject(EnteredProjectName);
-			call TCABSPROJECTSetProjectDescription(EnteredProjectName, EnteredProjectDescription);
-		COMMIT;	
-	END //
- DELIMITER ;
  -- Project
  -- adds a project called Big Test Project
  call TCABSPROJECTAddProject("Big Test Project");
@@ -1296,9 +1260,28 @@ create Procedure TCABSOFFERINGPROJECTAddProjectOffering(in EnteredProjectName va
         insert OfferingProject (UnitOfferingID,ProjectName) values (@ValuesunitOfferingID,EnteredProjectName);
 	END //
  DELIMITER ;
+ 
+                 DELIMITER //
+create Procedure TCABSOFFERINGPROJECTGetProjectOfferingID(in EnteredProjectName varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255), out ValueProjectOfferingID int)
+	BEGIN
+        call TCABSUNITOFFERINGGetKey(SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @ValuesunitOfferingID);
+       
+        if ((select count(*) from Project where ProjectName = EnteredProjectName) <> 1) then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Entered Project Does not exist";
+        end if;
+        
+        select OfferingProjectID into ValueProjectOfferingID from OfferingProject where UnitOfferingID = @ValuesunitOfferingID and ProjectName = EnteredProjectName;
+        
+        if ValueProjectOfferingID is null then
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Entered Project for this offering doesn't exist";
+        end if;
+	END //
+ DELIMITER ;
 -- Project offering
 -- add the Project X to the subject Y in the period of Z for the year of A
--- call  TCABSOFFERINGPROJECTAddProjectOffering("Big Test Project","ICT30002", "Semester 1", "2019");
+call  TCABSOFFERINGPROJECTAddProjectOffering("Big Test Project","ICT30002", "Semester 1", "2019");
+-- gets the project offering key
+call TCABSOFFERINGPROJECTGetProjectOfferingID("Big Test Project","ICT30002", "Semester 1", "2019", @ValueProjectOfferingID);
 
   DELIMITER //
 create Procedure TCABSTEAMPROJECTAddTeamProject(in EnteredProjectName varchar(255),in TeamName varchar(255), in ConvenorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
@@ -1312,6 +1295,8 @@ create Procedure TCABSTEAMPROJECTAddTeamProject(in EnteredProjectName varchar(25
         if ((select count(*) from Project where ProjectName = EnteredProjectName) <> 1) then
 			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Entered Project Does not exist";
         end if;
+        
+        call TCABSOFFERINGPROJECTGetProjectOfferingID(EnteredProjectName,SelectedUnitCode,SelectedOfferingterm,SelectedOfferingyear,@ValueProjectOfferingID);
         
         insert TeamProjects (TeamID,ProjectName) values (@ValuesTeamID,EnteredProjectName);
 	END //
@@ -1351,21 +1336,6 @@ create Procedure TCABSTEAMPROJECTSetProjectBudget(in EnteredProjectBudget double
 	END //
  DELIMITER ;
  
-DELIMITER //
-create Procedure TCABS_TeamProject_Add(in EnteredProjectName varchar(255),in TeamName varchar(255), in ConvenorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
-	BEGIN
-				
-		DECLARE EXIT HANDLER FOR 45000 ROLLBACK;	
-
- 		START TRANSACTION;	
-			call TCABSTEAMPROJECTAddTeamProject(EnteredProjectName, TeamName, ConvenorEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear);
-		COMMIT;	
-	END //
- DELIMITER ;
-
-call TCABS_TeamProject_Add("Big Test Project", "just a name", "dtargaryen@gmail.com", "ICT30001", "Semester 2", "2018");
-
-/*
 -- team projects
 -- the project X is allocated to the team called Y which has the supervisor with the email Z. The team is in the subject A for the period of B for the year of C
 call TCABSTEAMPROJECTAddTeamProject("Big Test Project","testTeam2", "dtargaryen@gmail.com","ICT30002", "Semester 1", "2019");
@@ -1375,7 +1345,7 @@ call TCABSTEAMPROJECTGetTeamProjectID("Big Test Project","testTeam2", "dtargarye
 -- sets a budget of X for the project Y to the team called Z which has the supervisor with the email A. The team is in the subject B for the period of C for the year of D
 call TCABSTEAMPROJECTSetProjectBudget(36000,"Big Test Project","testTeam2", "dtargaryen@gmail.com","ICT30002", "Semester 1", "2019");
 call TCABSTEAMPROJECTSetProjectBudget(10,"Big Test Project","besttestTeam", "dtargaryen@gmail.com","ICT30002", "Semester 1", "2019");
-*/
+
 
                 DELIMITER //
 create Procedure TCABSTASKAddNewTask(in StudentEmail varchar(255),in ProjectName varchar(255),in Teamname varchar(255), in SupervisorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255), in MinuteTime int, in Taskdescription text, in EnteredRoleName varchar(255))
@@ -1409,7 +1379,7 @@ create Procedure TCABSTASKAddNewTask(in StudentEmail varchar(255),in ProjectName
  DELIMITER ;
  
 
-/* 
+ 
  -- Tasks
  -- for the student user X works on the group project Y for the team called Z that has the supervisor of A which watched over this team for the subject B that is offered in period C within the Year D. The user X has submitted a task for E minutes of work that has the description of F and the Role type of G
 call TCABSTASKAddNewTask("Example@hotmail.com","Big Test Project","testTeam2","dtargaryen@gmail.com","ICT30002", "Semester 1", "2019",7,"Assigning team tasks","Project Manager");
@@ -1417,7 +1387,6 @@ call TCABSTASKAddNewTask("Example@hotmail.com","Big Test Project","testTeam2","d
 call TCABSTASKAddNewTask("bestExample@hotmail.com","Big Test Project","besttestTeam","dtargaryen@gmail.com","ICT30002", "Semester 1", "2019",20,"Assigning team tasks","Project Manager");
 call TCABSTASKAddNewTask("bestExample@hotmail.com","Big Test Project","besttestTeam","dtargaryen@gmail.com","ICT30002", "Semester 1", "2019",20,"Assigning team tasks","Developer");
 -- think up a method for logging changes
-*/
 
                 DELIMITER //
 create Procedure TCABSSUPERVISORMEETINGAddMeeting(in StartTime datetime, in EndTime datetime, in Location text, in Teamname varchar(255), in SupervisorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
@@ -1459,8 +1428,8 @@ create Procedure TCABSSUPERVISORMEETINGCheckForConflicts(in EnteredStartTime dat
 	BEGIN
         DROP TABLE IF EXISTS `Supervisoroffers`;
         create temporary table Supervisoroffers
-        select * from SupervisorMeeting natural join Team; 
-        if ((select count(*) from Supervisoroffers natural join OfferingStaff where 
+        select * from SupervisorMeeting natural join team; 
+        if ((select count(*) from Supervisoroffers natural join offeringstaff where 
         username = SupervisorEmail and ((StartTime <= EnteredStartTime and EnteredStartTime <= EndTime) 
         or (EndTime >= EnteredEndTime and EnteredEndTime >= StartTime))) >= 1) then
 			drop temporary table Supervisoroffers;
@@ -1483,7 +1452,6 @@ create Procedure TCABSSUPERVISORMEETINGGetMeetingKey(in EnteredStartTime datetim
 END //
  DELIMITER ;
  
-/*
  -- supervisor meeting 
  -- add a meeting with the start Time and date of X and the finish time and date of Y in the location of Z for the team called A with the supervisor of B for the subject of C offered in the period of D in the year of E
  call TCABSSUPERVISORMEETINGAddMeeting('2019-07-14 23:40:00','2019-07-14 23:45:00',"Tutorial room","testTeam2","dtargaryen@gmail.com","ICT30002", "Semester 1", "2019");
@@ -1494,17 +1462,16 @@ END //
 
 -- gets the Meeting ID For supervisor meeting This shouldn't be used outside of Procedures and functions
 call TCABSSUPERVISORMEETINGGetMeetingKey('2019-07-14 23:40:00',"testTeam2","dtargaryen@gmail.com","ICT30002", "Semester 1", "2019",@ValueSuppervisorMeetingKey);
-*/
 
                   DELIMITER //
 create Procedure TCABSMEETINGATTENDIEESAddAttendiee(in StudentEmail Varchar(255),in EnteredStartTime datetime, in Teamname varchar(255), in SupervisorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
 	BEGIN
-		DECLARE EXIT HANDLER FOR 45000 ROLLBACK;	
         call TCABSSUPERVISORMEETINGGetMeetingKey(EnteredStartTime,Teamname,SupervisorEmail,SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear,@ValueSuppervisorMeetingKey);
         call TCABSTEAMMEMBERGetTeamMember(StudentEmail,Teamname,SupervisorEmail,SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @ValueTeamMemberID);
-		
+		if ((select count(*) from MeetingAttendees where TeamMemberID = @ValueTeamMemberID or MeetingID = @ValueSuppervisorMeetingKey) >= 1) then
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "The entered team member has already been regestored as a meeting attendiee";
+        end if;
         insert into MeetingAttendees(TeamMemberID,MeetingID) values (@ValueTeamMemberID,@ValueSuppervisorMeetingKey);
-		COMMIT;
 END //
  DELIMITER ;
  
@@ -1520,12 +1487,10 @@ create Procedure TCABSMEETINGATTENDIEESGetAttendieeKey(in StudentEmail Varchar(2
         end if;
 END //
  DELIMITER ;
-/*
  -- record the attendence of the team member X for the meeting starting at Y for the team called Z whihc is being supervised by A for the subject B in the period of C in the year of D
  call TCABSMEETINGATTENDIEESAddAttendiee("Example@hotmail.com",'2019-07-14 23:40:00',"testTeam2","dtargaryen@gmail.com","ICT30002", "Semester 1", "2019");
  -- gets the meetingattendiee key (this shouldn't be called outside of a procedure)
  call TCABSMEETINGATTENDIEESGetAttendieeKey("Example@hotmail.com",'2019-07-14 23:40:00',"testTeam2","dtargaryen@gmail.com","ICT30002", "Semester 1", "2019",@AttendieeMeetingKey);
- */
 
                    DELIMITER //
 create Procedure STUDENTPEERASSESSMENTAddNewAssessment(in EnteredName varchar(255))
@@ -1560,12 +1525,10 @@ create Procedure STUDENTPEERASSESSMENTGetAssessmentKey(in EnteredName varchar(25
 END //
  DELIMITER ;
 
-/*
 -- adds a new peer assessment instence 
 call STUDENTPEERASSESSMENTAddNewAssessment("AssessMe");
 -- gets the peer assessment instence
 call STUDENTPEERASSESSMENTGetAssessmentKey("AssessMe",@ValueSPAKey);
-*/
 
                    DELIMITER //
 create Procedure PEERASSESSMENTFEILDAddFeild(in EnteredName varchar(255), in enteredfeildName varchar(255), in EnteredFeildDescription text)
@@ -1598,11 +1561,9 @@ create Procedure PeerAssessmentFeildGetFeildKey(in EnteredName varchar(255), in 
 END //
  DELIMITER ;
  
-/*
  call PEERASSESSMENTFEILDAddFeild("AssessMe","Name","Enter your name here");
  
  call PeerAssessmentFeildGetFeildKey("AssessMe","Name",@ValueFeildID);
- */
  
                      DELIMITER //
 create Procedure SPAINSTENCEAddInstence(in EnteredName varchar(255), in EnteredAssessmentDate date, in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
@@ -1646,12 +1607,10 @@ create Procedure SPAINSTENCEGetInstenceKey(in EnteredName varchar(255), in Enter
         end if;
 END //
  DELIMITER ;
-/*
  -- add the peer reveiw instence of X with the due date of Y for the user team member of Z in the team of A with the superviosor of B for the subject of C in the period of D in the year of E
   call SPAINSTENCEAddInstence("AssessMe",'2019-07-14',"ICT30002", "Semester 1", "2019");
   -- This should only be used in procedurers
   call SPAINSTENCEGetInstenceKey("AssessMe",'2019-07-14',"ICT30002", "Semester 1", "2019",@valueSPAInstenceKey);
-	*/
 
                       DELIMITER //
 create Procedure GenerateAccrualTasks()
@@ -1671,7 +1630,7 @@ create Procedure REPORTUnitOfferingGenerateBudget(in Unitcode varchar(255),in Pe
 	BEGIN
 		 call TCABSUNITOFFERINGGetKey(Unitcode, PeriodName, periodyear, @ValuesunitOfferingID);
          call GenerateAccrualTasks();
-		 select TeamName,ProjectName,Budget,Round(Total_Pay,2) as Expense_To_Date,Budget - Round(Total_Pay,2) as Remaining_Budget from Team natural join teamProjects t1 inner join (select TeamProjectID, sum(Pay) as Total_Pay from ProjectCosts group by TeamProjectID) t2 on t1.TeamProjectID = t2.TeamProjectID natural join offeringStaff where UnitOfferingID = @ValuesunitOfferingID;
+		 select TeamName,ProjectName,Budget,Round(Total_Pay,2) as Expense_To_Date,Budget - Round(Total_Pay,2) as Remaining_Budget from team natural join teamProjects t1 inner join (select TeamProjectID, sum(Pay) as Total_Pay from ProjectCosts group by TeamProjectID) t2 on t1.TeamProjectID = t2.TeamProjectID natural join offeringStaff where UnitOfferingID = @ValuesunitOfferingID;
 END //
  DELIMITER ;
  
@@ -1680,7 +1639,7 @@ create Procedure REPORTUnitOfferingOverVeiw(in Unitcode varchar(255),in PeriodNa
 	BEGIN
 		 call TCABSUNITOFFERINGGetKey(Unitcode, PeriodName, periodyear, @ValuesunitOfferingID);
          call GenerateAccrualTasks();
-		select TeamName,Total_Time_Spent,Budget - Round(Total_Pay,2) as Remaining_Budget, Last_Meeting_Date as Last_Meeting from Team natural join teamProjects t1 inner join (select Team.teamID,max(SupervisorMeeting.StartTime) as Last_Meeting_Date from Team natural join SupervisorMeeting group by Team.teamid)t3 on t1.TeamID = t3.TeamID inner join (select TeamProjectID,sum(Total_Time_Spent) as Total_Time_Spent, sum(Pay) as Total_Pay from ProjectCosts group by TeamProjectID) t2 on t1.TeamProjectID = t2.TeamProjectID natural join offeringStaff where UnitOfferingID = @ValuesunitOfferingID;
+		select TeamName,Total_Time_Spent,Budget - Round(Total_Pay,2) as Remaining_Budget, Last_Meeting_Date as Last_Meeting from team natural join teamProjects t1 inner join (select team.teamID,max(SupervisorMeeting.StartTime) as Last_Meeting_Date from team natural join SupervisorMeeting group by team.teamid)t3 on t1.TeamID = t3.TeamID inner join (select TeamProjectID,sum(Total_Time_Spent) as Total_Time_Spent, sum(Pay) as Total_Pay from ProjectCosts group by TeamProjectID) t2 on t1.TeamProjectID = t2.TeamProjectID natural join offeringStaff where UnitOfferingID = @ValuesunitOfferingID;
 END //
  DELIMITER ;
 -- report 7
@@ -1734,13 +1693,11 @@ create Procedure TCABSTASKSModifyTask(in EnteredTaskID int, in EnteredProjectNam
 	END //
  DELIMITER ; 
  
-/*
 call TCABSTASKSGetTaskID(1,"Big Test Project","testTeam2", "dtargaryen@gmail.com","ICT30002", "Semester 1", "2019",@ValuetaskID,@ValueTeamProjectID);
 -- marks the task as logged 
 call TCABSTASKSRegistorTask(1,"Big Test Project","testTeam2", "dtargaryen@gmail.com","ICT30002", "Semester 1", "2019");
 -- changes the time and role of a selected task
 call TCABSTASKSModifyTask(1,"Big Test Project","testTeam2", "dtargaryen@gmail.com","ICT30002", "Semester 1", "2019",30,"Developer");
-*/
 
      DELIMITER //
 create Procedure TCABSMEETINGSetAgender(EnteredStartTime datetime, in Teamname varchar(255), in SupervisorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255),NewAgender text)
@@ -1843,7 +1800,6 @@ create Procedure TCABSMEETINGChangeTime(EnteredOriginalStartTime datetime, in Te
 	END //
  DELIMITER ; 
  
-/*
 -- changes both Display_Time and Loc_Display to their oposite state (eg. true to false) for students to veiw details (both start as false)
 call TCABSMEETINGChangeBothDisplay('2019-07-14 23:40:00',"testTeam2","dtargaryen@gmail.com","ICT30002", "Semester 1", "2019");
 -- TCABSMEETINGChangeLocationDisplay changes Loc_Display to opposite of current state
@@ -1863,514 +1819,27 @@ call TCABSMEETINGSetLocation('2019-07-14 23:40:00',"testTeam2","dtargaryen@gmail
 -- changes the meeting time (given the supervisor isn't booked)
 call TCABSMEETINGChangeTime('2019-07-15 00:01:00',"testTeam2","dtargaryen@gmail.com","ICT30002", "Semester 1", "2019",'2019-07-16 23:40:00', '2019-07-16 23:40:05');
 
-*/
--- select * from Supervisormeeting;
--- call TCABSSUPERVISORMEETINGGetMeetingKey('2019-07-14 23:40:00',"testTeam2","dtargaryen@gmail.com","ICT30002", "Semester 1", "2019",@ValueSuppervisorMeetingKey);
--- in EnteredStartTime datetime, in Teamname varchar(255), in SupervisorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255), out ValueSuppervisorMeetingKey int
-
 DELIMITER //
 create Procedure TCABSUpdateTeamSupervisor(in EnteredTeamname varchar(255), in UserEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255), in NewSupervisorsEmail varchar(255))
-    BEGIN
-
+	BEGIN
+   
         call TCABSTeamGetTeamKey(EnteredTeamname, UserEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @ValuesTeamID);
-        call TCABSOFFERINGSTAFFGetOfferingStaffKey(NewSupervisorsEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear,@ValueOfferingStaff);
-        update Team set offeringstaffid = @ValueOfferingStaff where teamid = @ValuesTeamID;
+		call TCABSOFFERINGSTAFFGetOfferingStaffKey(NewSupervisorsEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear,@ValueOfferingStaff);
+		update team set offeringstaffid = @ValueOfferingStaff where teamid = @ValuesTeamID;
 END//
+
  DELIMITER ;
-
-DELIMITER //
- Create Procedure TCABSUpdateFullTeam(in EnteredTeamname varchar(255), in UserEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255), in NewSupervisorsEmail varchar(255),in newteamname varchar(255),in ProjectManagerUser varchar(255))
- begin
-		DECLARE EXIT HANDLER FOR 45000 ROLLBACK;
-		START TRANSACTION;
-        call TCABSUpdateTeamSupervisor(EnteredTeamname, UserEmail, SelectedUnitCode,SelectedOfferingterm, SelectedOfferingyear, NewSupervisorsEmail);
-        call TCABSTeamSetTeamName(EnteredTeamname, UserEmail, SelectedUnitCode,SelectedOfferingterm, SelectedOfferingyear, newteamname);
-        call TCABSTeamSetTeamProjectManager(EnteredTeamname, UserEmail, SelectedUnitCode,SelectedOfferingterm, SelectedOfferingyear, ProjectManagerUser);
-		COMMIT;
- end //
- DELIMITER ;
-
- DELIMITER //
-
-create or replace Procedure TCABSTeamDeleteTeam(in SelectedTeamName varchar(255), in UserEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
-	BEGIN
-
-		if (char_length(UserEmail) < 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no User Email entered";
-        end if;
-        if (char_length(SelectedTeamName) < 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no team name entered";
-        end if;
-        if ((select count(*) from Users where email = UserEmail) <> 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered User Email does not exist";
-        end if;
-        if ((select count(*) from UserCat where userType = "supervisor" and email = UserEmail) <> 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "This user is not currently a supervisor of any team";
-        end if;
-        if (TCABSDateValiadationCheckUnitOfferingVsSystem(SelectedOfferingterm,SelectedOfferingyear)) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "you can not update a team to a unit which has already concluded";
-        end if;
-
-		call TCABSTeamGetTeamKey(SelectedTeamName, UserEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @ValuesTeamID);
-
-		if ((select COUNT(*) from SupervisorMeeting WHERE @ValuesTeamID = TeamID) >= 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Entered Team already having a team meeting cannot be deleted.";
-		end if;
-
-		if ((select COUNT(*) from TeamProjects WHERE @ValuesTeamID = TeamID) >= 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Entered Team already having a team project cannot be deleted.";
-		end if;
-
-		if (select count(*) from Team where TeamID = @ValuesTeamID) >= 0 then
-			DELETE FROM Team
-			WHERE TeamID = @ValuesTeamID;
-		else
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no Team with the entered Team";
-		end if;
-	END //
- DELIMITER;
-
-  DELIMITER //
-create or replace Procedure TCABSTEAMPROJECTDeleteTeamProject(in EnteredProjectName varchar(255), in TeamName varchar(255), in ConvenorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
-	BEGIN
-       if (char_length(EnteredProjectName) < 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no Project name entered";
-        end if;
-
-		call TCABSTeamGetTeamKey(TeamName,ConvenorEmail,SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @ValuesTeamID);
-
-        if ((select count(*) from Project where ProjectName = EnteredProjectName) <> 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Entered Project Does not exist";
-        end if;
-
-		call TCABSTEAMPROJECTGetTeamProjectID(EnteredProjectName, TeamName, ConvenorEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @ValueTeamProjectID);
-
-		if ((select count(*) from Task where TeamProjectID = @ValueTeamProjectID) >= 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Team Project already having Task cannot be deleted";
-        end if;
-
-		if (select count(*) from TeamProjects where TeamProjectID = @ValueTeamProjectID) >= 0 then
-			DELETE FROM TeamProjects
-			WHERE TeamProjectID = @ValueTeamProjectID;
-		else
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no Team Project with the entered Team Project";
-		end if;
-	END //
- DELIMITER;
-
-  DELIMITER //
-create or replace Procedure PEERASSESSMENTFEILDDeleteFeild(in EnteredName varchar(255), in enteredfeildName varchar(255), in EnteredFeildDescription text)
-	BEGIN
-        if (char_length(EnteredFeildDescription) < 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no Feild Description entered";
-        end if;
-		if (char_length(enteredfeildName) < 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no Feild name entered";
-        end if;
-
-		call PeerAssessmentFeildGetFeildKey(EnteredName, enteredfeildName,@ValueFeildID);
-
-		if (select count(*) from PeerAssessmentFeild where FeildID = @ValueFeildID) >= 0 then
-			DELETE FROM PeerAssessmentFeild
-			WHERE FeildID = @ValueFeildID;
-		else
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no Peer Assessment Field with the entered Peer Assessment Field";
-		end if;
-	END //
- DELIMITER;
-
-  DELIMITER //
-create or replace Procedure STUDENTPEERASSESSMENTDeleteAssessment(in EnteredName varchar(255))
-	BEGIN
-        if (char_length(EnteredName) < 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no Assessment Name";
-        end if;
-
-		call STUDENTPEERASSESSMENTGetAssessmentKey(EnteredName, @ValueSPAKey);
-
-		if ((select count(*) from PeerAssessmentFeild where SPAID = @ValueSPAKey) >= 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Student Peer Assessment already having Peer Assessment cannot be deleted";
-        end if;
-
-		if ((select count(*) from SPAInstence where SPAID = @ValueSPAKey) >= 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Student Peer Assessment already having SPA Instence cannot be deleted";
-        end if;
-
-		if (select count(*) from StudentPeerAssessment where SPAID = @ValueSPAKey) >= 0 then
-			DELETE FROM StudentPeerAssessment
-			WHERE SPAID = @ValueSPAKey;
-		else
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no Student Peer Assessment with the entered Student Peer Assessment";
-		end if;
-	END //
- DELIMITER;
-
- DELIMITER //
-create or replace Procedure SPAINSTENCEDeleteInstence(in EnteredName varchar(255), in EnteredAssessmentDate date, in StudentEmail Varchar(255), in Teamname varchar(255), in SupervisorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
-	BEGIN
-
-        declare TimerestricStart,TimeresticEnd date;
-
-        call TCABSTEAMMEMBERGetTeamMember(StudentEmail,Teamname,SupervisorEmail,SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @ValueTeamMemberID);
-        call STUDENTPEERASSESSMENTGetAssessmentKey(EnteredName,@ValueSPAKey);
-
-        select StartDate,Enddate into TimerestricStart,TimeresticEnd from TeachingPeriod where Term = SelectedOfferingterm and Year = SelectedOfferingyear;
-
-        if (EnteredAssessmentDate < TimerestricStart) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "you cannot schedual a peer assessment before the period occurs";
-        end if;
-
-        if (EnteredAssessmentDate > TimeresticEnd) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "you cannot schedual a peer assessment after the period occurs";
-        end if;
-
-		call SPAINSTENCEGetInstenceKey(EnteredName, EnteredAssessmentDate, StudentEmail, Teamname, SupervisorEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @valueSPAInstenceKey);
-
-		if (select count(*) from SPAInstence where SPAInstenceID = @valueSPAInstenceKey) >= 0 then
-			DELETE FROM SPAInstence
-			WHERE SPAInstenceID = @valueSPAInstenceKey;
-		else
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no SPA Instence with the entered SPA Instence";
-		end if;
-	END //
- DELIMITER;
-/*
-    DELIMITER //
-create or replace Procedure TCABSTEAMMEMBERDeleteTeamMember(in StudentEmail varchar(255),in Teamname varchar(255), in SupervisorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
-	BEGIN
-		declare StoredEnrolmentID int;
-		if (char_length(StudentEmail) < 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no Student Email entered";
-        end if;
-        if (char_length(SupervisorEmail) < 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no Supervisor Email entered";
-        end if;
-        if (char_length(Teamname) < 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no team name entered";
-        end if;
-        if ((select count(*) from Users where email = StudentEmail) <> 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered Student Email does not exist";
-        end if;
-        if ((select count(*) from Users where email = SupervisorEmail) <> 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered Supervisor Email does not exist";
-        end if;
-
-        call TCABSUNITOFFERINGGetKey(SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @ValuesunitOfferingID);
-
-        select enrolmentID into StoredEnrolmentID from Enrolment where unitOfferingID = @ValuesunitOfferingID and sUserName = StudentEmail;
-		if( StoredEnrolmentID is null) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered Student Enrolment not exist";
-        end if;
-
-        call TCABSTEAMMEMBERGetTeamMember(StudentEmail, Teamname, SupervisorEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @ValueTeamMemberID);
-
-		if ((select count(*) from Task where TeamMemberID = @ValueTeamMemberID) >= 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Team Member already having Tasks cannot be deleted";
-        end if;
-
-		if ((select count(*) from MeetingAttendees where TeamMemberID = @ValueTeamMemberID) >= 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Team Member already having Meeting Attendees Instence cannot be deleted";
-        end if;
-
-		if ((select count(*) from SPAInstence where TeamMemberID = @ValueTeamMemberID) >= 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Team Member already having SPA Instence cannot be deleted";
-        end if;
-
-		if (select count(*) from TeamMember where TeamMemberID = @ValueTeamMemberID) >= 0 then
-			DELETE FROM TeamMember
-			WHERE TeamMemberID = @ValueTeamMemberID;
-		else
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no Team Member with the entered Team Member";
-		end if;
-	END //
- DELIMITER;
-
- */
-     DELIMITER //
-create or replace Procedure TCABSTEAMMEMBERDeleteTeamMember(in StudentEmail varchar(255),in Teamname varchar(255), in SupervisorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
-	BEGIN
-		declare StoredEnrolmentID int;
-		if (char_length(StudentEmail) < 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no Student Email entered";
-        end if;
-        if (char_length(SupervisorEmail) < 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no Supervisor Email entered";
-        end if;
-        if (char_length(Teamname) < 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no team name entered";
-        end if;
-        if ((select count(*) from Users where email = StudentEmail) <> 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered Student Email does not exist";
-        end if;
-        if ((select count(*) from Users where email = SupervisorEmail) <> 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered Supervisor Email does not exist";
-        end if;
-
-        call TCABSUNITOFFERINGGetKey(SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @ValuesunitOfferingID);
-
-        select enrolmentID into StoredEnrolmentID from Enrolment where unitOfferingID = @ValuesunitOfferingID and sUserName = StudentEmail;
-		if( StoredEnrolmentID is null) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered Student Enrolment not exist";
-        end if;
-
-        call TCABSTEAMMEMBERGetTeamMember(StudentEmail, Teamname, SupervisorEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @ValueTeamMemberID);
-
-		if ((select count(*) from Task where TeamMemberID = @ValueTeamMemberID) >= 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Team Member already having Tasks cannot be deleted";
-        end if;
-
-		if ((select count(*) from MeetingAttendees where TeamMemberID = @ValueTeamMemberID) >= 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Team Member already having Meeting Attendees Instence cannot be deleted";
-        end if;
-
-		if (select count(*) from TeamMember where TeamMemberID = @ValueTeamMemberID) >= 0 then
-			DELETE FROM TeamMember
-			WHERE TeamMemberID = @ValueTeamMemberID;
-		else
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no Team Member with the entered Team Member";
-		end if;
-	END //
- DELIMITER;
  
-
  DELIMITER //
-create or replace Procedure TCABSMEETINGATTENDIEESDeleteAttendiee(in StudentEmail Varchar(255),in EnteredStartTime datetime, in Teamname varchar(255), in SupervisorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
-	BEGIN
-		call TCABSMEETINGATTENDIEESGetAttendieeKey(StudentEmail, EnteredStartTime, Teamname, SupervisorEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @AttendieeMeetingKey);
-
-		if (select count(*) from MeetingAttendees where MeetingAttendeeID = @AttendieeMeetingKey) >= 0 then
-			DELETE FROM MeetingAttendees
-			WHERE MeetingAttendeeID = @AttendieeMeetingKey;
-		else
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no Meeting Attendee with the entered Meeting Attendee";
-		end if;
-END //
- DELIMITER ;
-
-  DELIMITER //
-create or replace Procedure TCABSSUPERVISORMEETINGDeleteMeeting(in StartTime datetime, in Teamname varchar(255), in SupervisorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
-	BEGIN
-        if (StartTime <= sysdate()) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Cannot schedual a time behind the current date and time";
-        end if;
-
-		call TCABSSUPERVISORMEETINGGetMeetingKey(StartTime, Teamname, SupervisorEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @ValueSuppervisorMeetingKey);
-
-		if ((select count(*) from MeetingAttendees where MeetingID = @ValueSuppervisorMeetingKey) >= 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Supervisor Meeting already having Meeting Attendees cannot be deleted";
-        end if;
-
-		if (select count(*) from SupervisorMeeting where MeetingID = @ValueSuppervisorMeetingKey) >= 0 then
-			DELETE FROM SupervisorMeeting
-			WHERE MeetingID = @ValueSuppervisorMeetingKey;
-		else
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no Supervisor Meeting with the entered Supervisor Meeting";
-		end if;
-END //
- DELIMITER;
-
-  DELIMITER //
-create or replace Procedure TCABSENROLMENTDeleteEnrolment(in EnroledUser varchar(255),in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
-	BEGIN
-		call TCABSENROLMENTGetEnrolKey(EnroledUser, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @ValueEnrolID);
-
-		if ((select count(*) from TeamMember where enrolmentID = @ValueEnrolID) >= 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Enrolment already having Teams cannot be deleted";
-        end if;
-
-		if (select count(*) from Enrolment where enrolmentID = @ValueEnrolID) >= 0 then
-			DELETE FROM Enrolment
-			WHERE enrolmentID = @ValueEnrolID;
-		else
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no Enrolment with the entered Enrolment";
-		end if;
-	END //
- DELIMITER;
-
-  DELIMITER //
-create or replace Procedure TCABSOFFERINGSTAFFDeleteOfferingStaff(in UserEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
-	BEGIN
-		if (char_length(UserEmail) < 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no User Email entered";
-        end if;
-
-        if ((select count(*) from Users where email = UserEmail) <> 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered User Email does not exist";
-        end if;
-
-        call TCABSOFFERINGSTAFFGetOfferingStaffKey(UserEmail, SelectedUnitCode, SelectedOfferingterm, SelectedOfferingyear, @ValueOfferingStaff);
-
-		if ((select count(*) from Team where OfferingStaffID = @ValueOfferingStaff) >= 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Team already having Offering Staff cannot be deleted";
-        end if;
-
-		if (select count(*) from OfferingStaff where OfferingStaffID = @ValueOfferingStaff) >= 0 then
-			DELETE FROM OfferingStaff
-			WHERE OfferingStaffID = @ValueOfferingStaff;
-		else
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no Offering Staff with the entered Offering Staff";
-		end if;
-	END //
- DELIMITER;
-
-  DELIMITER //
-create or replace PROCEDURE TCABSUNITOFFERINGDeleteOffering( in OfferedUnitID Varchar(255), in Offeredterm varchar(255), in Offeredyear varchar(255))
-	BEGIN
-		if(char_length(OfferedUnitID) <= 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "the Unit feild has not been filled";
-		end if;
-		if((select count(*) from tcabs.Unit where unitCode = OfferedUnitID) <> 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "the Unit you entered does not exist";
-		end if;
-
-		call TCABSUNITOFFERINGGetKey(OfferedUnitID, Offeredterm, Offeredyear, @ValuesunitOfferingID);
-
-		if ((select count(*) from OfferingProject where unitOfferingID = @ValuesunitOfferingID) >= 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Unit Offering already having Offering PRoject cannot be deleted";
-        end if;
-
-		if ((select count(*) from Enrolment where unitOfferingID = @ValuesunitOfferingID) >= 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Unit Offering already having Enrolment cannot be deleted";
-        end if;
-
-		if ((select count(*) from OfferingStaff where unitOfferingID = @ValuesunitOfferingID) >= 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Unit Offering already having Offering Staff cannot be deleted";
-        end if;
-
-		if (select count(*) from UnitOffering where unitOfferingID = @ValuesunitOfferingID) >= 0 then
-			DELETE FROM UnitOffering
-			WHERE unitOfferingID = @ValuesunitOfferingID;
-		else
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no Unit Offering with the entered Unit Offering";
-		end if;
-	END //
-DELIMITER;
-
-/*
-  DELIMITER //
-create or replace PROCEDURE TCABSUNITOFFERINGDeleteOffering( in OfferedUnitID Varchar(255), in Offeredterm varchar(255), in Offeredyear varchar(255))
-	BEGIN
-		if(char_length(OfferedUnitID) <= 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "the Unit feild has not been filled";
-		end if;
-		if((select count(*) from tcabs.Unit where unitCode = OfferedUnitID) <> 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "the Unit you entered does not exist";
-		end if;
-
-		call TCABSUNITOFFERINGGetKey(OfferedUnitID, Offeredterm, Offeredyear, @ValuesunitOfferingID);
-
-		if ((select count(*) from OfferingProject where unitOfferingID = @ValuesunitOfferingID) >= 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Unit Offering already having Offering PRoject cannot be deleted";
-        end if;
-
-		if ((select count(*) from Enrolment where unitOfferingID = @ValuesunitOfferingID) >= 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Unit Offering already having Enrolment cannot be deleted";
-        end if;
-
-		if ((select count(*) from OfferingStaff where unitOfferingID = @ValuesunitOfferingID) >= 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Unit Offering already having Offering Staff cannot be deleted";
-        end if;
-
-		if ((select count(*) from SPAInstence where unitOfferingID = @ValuesunitOfferingID) >= 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Unit Offering already having SPA Instence cannot be deleted";
-        end if;
-
-		if (select count(*) from UnitOffering where unitOfferingID = @ValuesunitOfferingID) >= 0 then
-			DELETE FROM UnitOffering
-			WHERE unitOfferingID = @ValuesunitOfferingID;
-		else
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no Unit Offering with the entered Unit Offering";
-		end if;
-	END //
-DELIMITER;
-*/
-
-  DELIMITER //
-create or replace Procedure TCABSPERMISSIONDeletePermission(in RoleName varchar(255), in Functionality varchar(255))
-	BEGIN
-		if (char_length(RoleName) < 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no Role name entered";
-        end if;
-        if (char_length(Functionality) < 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no Functionality entered";
-        end if;
-
-        if ((select count(*) from Permission where usertype = RoleName) <> 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered Role name does not exist";
-        end if;
-        if ((select count(*) from Permission where procName = Functionality) <> 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered Functionality does not exist";
-        end if;
-
-		if (select count(*) from Permission where usertype = RoleName AND procName = Functionality) >= 0 then
-			DELETE FROM Permission
-			where usertype = RoleName
-			AND procName = Functionality;
-		else
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no Permission with the entered Permission";
-		end if;
-	END //
- DELIMITER;
-
-  DELIMITER //
-create or replace PROCEDURE TCABSUNITDeleteunit( in EnteredUnitcode varchar(10), in EnteredUnitname varchar(100))
-	BEGIN
-		if (char_length(EnteredUnitcode) < 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no Unit Code entered";
-        end if;
-		if (char_length(EnteredUnitname) < 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no Unit name entered";
-        end if;
-
-		if ((select count(*) from Unit where unitCode = EnteredUnitcode) <> 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered Unit Code does not exist";
-        end if;
-        if ((select count(*) from Unit where unitName = EnteredUnitname) <> 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered Unit name does not exist";
-        end if;
-
-		if ((select count(*) from UnitOffering where unitCode = EnteredUnitcode) >= 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Unit already having Unit Offering cannot be deleted";
-        end if;
-
-		if (select count(*) from Unit where unitCode = EnteredUnitcode AND unitName = EnteredUnitname) >= 0 then
-			DELETE FROM Unit
-			where unitCode = EnteredUnitcode
-			AND unitName = EnteredUnitname;
-		else
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no Unit with the entered Unit";
-		end if;
-	END //
- DELIMITER;
-
-  DELIMITER //
-create or replace Procedure TCABSTEACHINGPERIODDeletePeriod(in EnteredTerm varchar(255), in EnteredYear varchar(255))
-	BEGIN
-		if (char_length(EnteredTerm) < 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no term name entered";
-        end if;
-
-		if (char_length(EnteredYear) < 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "no year number entered";
-        end if;
-
-		if ((select count(*) from TeachingPeriod where term = EnteredTerm) <> 1) && ((select count(*) from TeachingPeriod where year = EnteredYear) <> 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "entered Term and Year do not exist";
-        end if;
-
-		if ((select count(*) from UnitOffering where term = EnteredTerm) >= 1) && ((select count(*) from UnitOffering where year = EnteredYear) <> 1) then
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Teaching Period already having Unit Offering cannot be deleted";
-        end if;
-
-		if (select count(*) from TeachingPeriod where term = EnteredTerm AND year = EnteredYear) >= 0 then
-			DELETE FROM TeachingPeriod
-			where term = EnteredTerm
-			AND year = EnteredYear;
-		else
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "There is no Teaching Period with the entered Teaching Period";
-		end if;
-	END //
- DELIMITER ;
+ Create Procedure TCABSUpdateFullTeam(in EnteredTeamname varchar(255), in UserEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255), in NewSupervisorsEmail varchar(255),in newteamname varchar(255),in ProjectManagerUser varchar(255))
+ begin 
+		call TCABSUpdateTeamSupervisor(EnteredTeamname, UserEmail, SelectedUnitCode,SelectedOfferingterm, SelectedOfferingyear, NewSupervisorsEmail);
+		call TCABSTeamSetTeamName(EnteredTeamname, UserEmail, SelectedUnitCode,SelectedOfferingterm, SelectedOfferingyear, newteamname);
+		call TCABSTeamSetTeamProjectManager(EnteredTeamname, UserEmail, SelectedUnitCode,SelectedOfferingterm, SelectedOfferingyear, ProjectManagerUser);
+ end //
+  DELIMITER ;
+-- call TCABSSUPERVISORMEETINGGetMeetingKey('2019-07-14 23:40:00',"testTeam2","dtargaryen@gmail.com","ICT30002", "Semester 1", "2019",@ValueSuppervisorMeetingKey);
+-- in EnteredStartTime datetime, in Teamname varchar(255), in SupervisorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255), out ValueSuppervisorMeetingKey int
 
 -- ---------------------------------------No Procedures or Functions after this point -----------------------------------------------
 -- Functions
