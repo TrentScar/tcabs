@@ -1561,6 +1561,19 @@
 			}
 			$stmt->close();
 		}
+		
+		public function deleteMA($sEmail, $startTime, $teamName, $supUserName, $unitCode, $term, $year) {
+		
+			$stmt = $GLOBALS['conn']->prepare("CALL TCABSMEETINGATTENDIEESDeleteAttendiee(?, ?, ?, ?, ?, ?)");
+			$stmt->bind_param("sssssss", $sEmail, $startTime, $teamName, $supUserName, $unitCode, $term, $year);
+			
+			try {
+				$stmt->execute();
+			} catch(mysqli_sql_exception $e) {
+				throw $e;
+			}
+			$stmt->close();
+		}
 	}
 
 ?>

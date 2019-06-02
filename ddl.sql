@@ -1279,9 +1279,7 @@ create Procedure TCABSOFFERINGPROJECTGetProjectOfferingID(in EnteredProjectName 
  DELIMITER ;
 -- Project offering
 -- add the Project X to the subject Y in the period of Z for the year of A
-call  TCABSOFFERINGPROJECTAddProjectOffering("Big Test Project","ICT30002", "Semester 1", "2019");
--- gets the project offering key
-call TCABSOFFERINGPROJECTGetProjectOfferingID("Big Test Project","ICT30002", "Semester 1", "2019", @ValueProjectOfferingID);
+
 
   DELIMITER //
 create Procedure TCABSTEAMPROJECTAddTeamProject(in EnteredProjectName varchar(255),in TeamName varchar(255), in ConvenorEmail varchar(255), in SelectedUnitCode varchar(255), in SelectedOfferingterm varchar(255), in SelectedOfferingyear varchar(255))
