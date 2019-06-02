@@ -1162,13 +1162,6 @@
 		public $timeTaken;
 		public $logged;
 		public $altered;
-			
-		public $projName;
-		public $teamName;
-		public $supEmail;
-		public $uCode;
-		public $term;
-		public $year;
 
 		public function getTask($tID) {
 				
