@@ -1153,7 +1153,7 @@
 
 	}
 	
-	class Task {
+		class Task {
 		public $taskID;
 		public $tMemberID;
 		public $teamProjectID;
@@ -1297,7 +1297,8 @@
 							"timeTaken" => $timeTaken,
 							"logged" => $logged,
 							"altered" => $altered,
-							"projName" => $teamName
+							"projName" => $projName,
+							"teamName" => $teamName
 						];
 
 						$i = $i +1;
@@ -1309,8 +1310,21 @@
 			}
 			return $tasks;
 		}
+		
+		public function updateTask($taskID, $projName, $teamName, $supEmail, $uCode, $term, $year, $timeTaken, $roleName) {
+		
+			$stmt = $GLOBALS['conn']->prepare("CALL TCABSTASKSModifyTask(?, ?, ?, ?, ?, ?, ?, ?, ?)");
+			$stmt->bind_param("sssssssss", $taskID, $projName, $teamName, $supEmail, $uCode, $term, $year, $timeTaken, $roleName);
+			
+			try {
+				$stmt->execute();
+			} catch(mysqli_sql_exception $e) {
+				throw $e;
+			}
+			$stmt->close();
+		}
 
-		// to do update and delete
+		// to do delete
 		// because no stored procedures
 	}
 
@@ -1346,7 +1360,7 @@
 				
 			$stmt = $GLOBALS['conn']->prepare("SELECT * FROM SupervisorMeeting 
 							WHERE MeetingID = ?");
-			$stmt->bind_result('s', $meetingID);
+			$stmt->bind_param('s', $meetingID);
 
 			$meetingObj = new meeting;
 
@@ -1380,5 +1394,173 @@
 			}
 			return $meetingObj;
 		}
+
+		// search meetings by team name and supervisor username
+		public function searchMeeting($searchQuery) {
+			
+			$searchResult = array();
+
+			$stmt = $GLOBALS['conn']->prepare("Select M.MeetingID, M.TeamID, M.Agender, M.StartTime, M.EndTime, 
+								M.Display_Time, M.Location, M.Meeting_Minutes, M.Comments, M.Approval, T.TeamName, OF.UserName
+								FROM SupervisorMeeting M INNER JOIN Team T ON M.TeamID = T.TeamID
+								INNER JOIN OfferingStaff OF ON OF.OfferingStaffID = T.OfferingStaffID
+								WHERE T.TeamName LIKE ? or OF.UserName LIKE ?");
+
+			$stmt->bind_param('ss', $searchQuery, $searchQuery);
+
+			$meetings = [];
+
+			try {
+				$stmt->execute();
+				$stmt->store_result();
+				$stmt->bind_result($meetingID, $teamID, $agenda, $startTime, 
+							$endTime, $dispTime, $location, 
+							$meetMinutes, $comments, $approval, $teamName, $userName);
+
+				$i = 0;
+				if($stmt->num_rows > 0) {
+					while($stmt->fetch()) {
+
+						$meetings[$i] = (array)[
+							"meetingID" => $meetingID,
+							"teamID" => $teamID,
+							"agenda" => $agenda,
+							"startTime" => $startTime,
+							"endTime" => $endTime,
+							"dispTime" => $dispTime,
+							"location" => $location,
+							"meetMinutes" => $meetMinutes,
+							"comments" => $comments,
+							"approval" => $approval,
+							"teamName" => $teamName,
+							"UserName" => $userName,
+						];
+
+						$i = $i +1;
+					}
+				}
+				$stmt->close();
+			} catch(mysqli_sql_exception $e) {
+				throw $e;
+			}
+			return $meetings;
+		}
+		
+		public function deleteMeeting($startTime, $teamName, $supUserName, $unitCode, $term, $year) {
+		
+			$stmt = $GLOBALS['conn']->prepare("CALL TCABSSUPERVISORMEETINGDeleteMeeting(?, ?, ?, ?, ?, ?)");
+			$stmt->bind_param("ssssss", $startTime, $teamName, $supUserName, $unitCode, $term, $year);
+			
+			try {
+				$stmt->execute();
+			} catch(mysqli_sql_exception $e) {
+				throw $e;
+			}
+			$stmt->close();
+		}
+
+		// update still left to do
 	}
+
+	class MeetingAttendee {
+		public $mAttendeeID;
+		public $tMemberID;
+		public $meetingID;
+
+		public function getAttendee($mAttendeeID) {
+			
+			$stmt = $GLOBALS['conn']->prepare("SELECT * FROM MeetingAttendees 
+				WHERE MeetingAttendeeID = ?");
+			$stmt->bind_param('s', $mAttendeeID);
+
+			$attendeeObj = new MeetingAttendee;
+
+			try {
+				$stmt->execute();
+				$stmt->store_result();
+				$stmt->bind_result($mAttendeeID, $tMemberID, $meetingID);
+
+				if($stmt->num_rows > 0) {
+					while($stmt->fetch()) {
+
+						$attendeeObj->mAttendeeID = $mAttendeeID;
+						$attendeeObj->tMemberID = $tMemberID;
+						$attendeeObj->meetingID = $meetingID;
+
+					}
+				} else throw new Exception("Meeting Attendee not found!");
+				$stmt->close();
+			} catch(mysqli_sql_exception $e) {
+				throw $e;
+			}
+			return $attendeeObj;
+		}
+
+		public function searchAttendee($searchQuery) {
+			
+			$searchResult = array();
+
+			$stmt = $GLOBALS['conn']->prepare("SELECT MA.MeetingAttendeeID, MA.TeamMemberID, MA.MeetingID, 
+								M.TeamID, T.TeamName, T.ProjectManager, M.Agender, M.StartTime, M.EndTime, M.Location, 
+								M.Display_Loc, M.Display_Time, M.Comments, M.Approval
+								FROM MeetingAttendees MA INNER JOIN SupervisorMeeting M ON M.MeetingID = MA.MeetingID
+								INNER JOIN Team T ON T.TeamID = M.TeamID
+								WHERE T.TeamName LIKE ?");
+
+			$stmt->bind_param('s', $searchQuery);
+
+			$attendees = [];
+
+			try {
+				$stmt->execute();
+				$stmt->store_result();
+				$stmt->bind_result($mAttendeeID, $tMemberID, $meetingID, $teamID, $teamName,
+								$projManager, $agenda, $startTime, $endTime, $location, $dispLoc, $dispTime,
+							 	$comments, $approval); 
+
+				$i = 0;
+				if($stmt->num_rows > 0) {
+					while($stmt->fetch()) {
+
+						$attendees[$i] = (array)[
+							"mAttendeeID" => $mAttendeeID,
+							"tMemberID" => $tMemberID,
+							"meetingID" => $meetingID,
+							"teamID" => $teamID,
+							"teamName" => $teamName,
+							"projManager" => $projManager,
+							"agenda" => $agenda,
+							"startTime" => $startTime,
+							"endTime" => $endTime,
+							"location" => $location,
+							"dispLoc" => $dispLoc,
+							"dispTime" => $dispTime,
+							"comments" => $comments,
+							"approval" => $approval,
+						];
+
+						$i = $i +1;
+					}
+				}
+				$stmt->close();
+			} catch(mysqli_sql_exception $e) {
+				throw $e;
+			}
+			return $attendees;
+		}
+
+		public function addAttendee($email, $startTime, $teamName, $supEmail, $unitCode, $term, $year) {
+
+			$stmt = $GLOBALS['conn']->prepare("CALL TCABSMEETINGATTENDIEESAddAttendiee(?, ?, ?, ?, ?, ?, ?)");
+			$stmt->bind_param("sssssss", $email, $startTime, $teamName, $supEmail, $unitCode, $term, $year);
+			
+			try {
+				$stmt->execute();
+			} catch(mysqli_sql_exception $e) {
+				throw $e;
+			}
+			$stmt->close();
+		}
+	}
+
 ?>
